@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.eggs/
+
+# Virtual environments
+venv/
+.env/
+.envrc
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+
+# Databases / generated files
+*.sqlite
+*.db
+*.mdb
+*.accdb
+
+# CSV exports / price file outputs (if generated)
+exports/
+output/

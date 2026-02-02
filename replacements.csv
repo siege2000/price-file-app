@@ -1,0 +1,13 @@
+from,to
+Opsite, O/S
+each, ea
+Lift & Fill, L&F
+Instant Plump, I/Plmp
+regex:(\d+(?:\.\d+)?)\s+(mg|g|kg|ml|l|mcg),\1\2
+Brown, brwn
+Lifting Brow, L/Brow
+PhotoReady, Ph/Read
+Serum Gloss, Ser/Glo
+Revlon, Rev
+
+

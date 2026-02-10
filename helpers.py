@@ -3,6 +3,8 @@ import json
 import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+import os
+import pyodbc
 
 import pandas as pd
 
@@ -182,3 +184,48 @@ def apply_replacements(
 
     s = s.str.replace(r"\s{2,}", " ", regex=True).str.strip()
     return s, total
+
+##Save to Access
+def save_pricefile_lines_to_access(export_df: pd.DataFrame, supplier_id: int):
+    # Adjust table/column names to your actual Access table
+    target_table = "PriceFileLine"
+
+    # Ensure expected cols exist (and in right types)
+    df = export_df.copy()
+    df["SupplierID"] = supplier_id
+
+    # Order columns to match INSERT statement
+    cols = ["SupplierID", "PLU", "Supplier_Code", "TradeName", "Retail", "Cost", "Barcode"]
+    for c in cols:
+        if c not in df.columns:
+            df[c] = ""
+
+    insert_sql = f"""
+        INSERT INTO {target_table}
+            (SupplierID, PLU, Supplier_Code, TradeName, Retail, Cost, Barcode)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """
+
+    rows = df[cols].itertuples(index=False, name=None)
+
+    with get_access_conn() as conn:
+        cur = conn.cursor()
+        cur.fast_executemany = True
+        cur.executemany(insert_sql, list(rows))
+        conn.commit()
+def get_access_conn():
+    db_path = os.path.join(os.getcwd(), "suppliers.mdb")
+    pwd = "LOCKIE MONDAY"
+
+    conn_str = (
+        r"DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};"
+        rf"DBQ={db_path};"
+        rf"PWD={pwd};"
+    )
+    return pyodbc.connect(conn_str)
+def load_suppliers():
+    conn = get_access_conn()
+    query = "SELECT SupplierID, SupplierName FROM Suppliers"
+    suppliers_df = pd.read_sql(query, conn)
+    conn.close()
+    return suppliers_df

@@ -1,6 +1,10 @@
 # app.py
 import pandas as pd
 import streamlit as st
+import os
+import pyodbc
+
+
 
 from helpers import (
     MAX_DESC_LEN,
@@ -16,6 +20,8 @@ from helpers import (
     safe_str,
     tpl_desc_defaults,
     tpl_field_default,
+    load_suppliers,
+    
 )
 
 st.set_page_config(layout="wide")
@@ -58,6 +64,8 @@ if mode == "Price File":
             df = df.iloc[skip_rows:].reset_index(drop=True)
 
         left, right = st.columns([3, 1], gap="large")
+        suppliers_df = load_suppliers()
+
 
         # -------- LEFT: preview + export options + rules
         with left:
@@ -86,6 +94,13 @@ if mode == "Price File":
 
         # -------- RIGHT: mapping + tradename settings
         with right:
+            
+            supplier_label_to_id = dict(
+            zip(suppliers_df["SupplierName"], suppliers_df["SupplierID"])
+        )
+
+            supplier_name = st.selectbox("Supplier", suppliers_df["SupplierName"].tolist())
+            supplier_id = supplier_label_to_id[supplier_name]
             st.subheader("Map columns → Price File Fields")
             cols = ["(None)"] + df.columns.tolist()
 
@@ -195,7 +210,14 @@ if mode == "Price File":
             out["DescLen"] = desc_len(out["TradeName"])
             out["InvalidDesc"] = out["DescLen"] > MAX_DESC_LEN
 
-        export_df = out.drop(columns=["DescLen", "InvalidDesc"], errors="ignore")
+        export_df = out.drop(columns=["DescLen", "InvalidDesc"], errors="ignore").copy()
+        if "TradeName" in export_df.columns:
+            export_df["TradeName"] =(
+                export_df["TradeName"]
+                .fillna("")
+                .astype("string")
+                .str.slice(0, MAX_DESC_LEN)
+            )
 
         st.subheader("Output Preview (Price File)")
         st.dataframe(export_df, use_container_width=True, height=350)
@@ -353,4 +375,6 @@ elif mode == "Specials File":
         data=csv_bytes,
         file_name=out_name,
         mime="text/csv"
+
+
     )

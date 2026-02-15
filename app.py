@@ -21,6 +21,7 @@ from helpers import (
     tpl_desc_defaults,
     tpl_field_default,
     load_suppliers,
+    clean_description,
     
 )
 
@@ -62,6 +63,15 @@ if mode == "Price File":
         df = load_file(uploaded_file)
         if skip_rows > 0:
             df = df.iloc[skip_rows:].reset_index(drop=True)
+        # Force ID-like columns to string to avoid 123456.0
+        for c in df.columns:
+            cl = c.strip().lower()
+            if cl in {"pharmacode", "pharma code", "barcode", "barcode/ean", "ean", "sap code", "plu"}:
+                df[c] = (
+                df[c].astype("string")
+                .str.replace(r"\.0$", "", regex=True)
+                .str.strip()
+        )
 
         left, right = st.columns([3, 1], gap="large")
         suppliers_df = load_suppliers()
@@ -105,6 +115,7 @@ if mode == "Price File":
             cols = ["(None)"] + df.columns.tolist()
 
             plu_default = tpl_field_default(df, tpl["fields"]["plu"])
+            pharmacode_default = tpl_field_default(df,tpl["fields"].get("pharmacode",{}))
             retail_default = tpl_field_default(df, tpl["fields"]["retail"])
             cost_default = tpl_field_default(df, tpl["fields"]["cost"])
 
@@ -115,6 +126,7 @@ if mode == "Price File":
             barcode_default = tpl_field_default(df, tpl["fields"].get("barcode", {}))
 
             plu_col = st.selectbox("PLU", cols, index=idx_for(cols, plu_default))
+            pharmacode_col = st.selectbox("Pharmacode", cols, index=idx_for(cols,pharmacode_default))
             retail_col = st.selectbox("Retail", cols, index=idx_for(cols, retail_default))
             cost_col = st.selectbox("Cost", cols, index=idx_for(cols, cost_default))
             barcode_col = st.selectbox("Barcode/EAN (optional)", cols, index=idx_for(cols, barcode_default))
@@ -154,10 +166,12 @@ if mode == "Price File":
 
         out["PLU"] = safe_str(df[plu_col]) if plu_col != "(None)" else ""
         out["Supplier_Code"] = safe_str(df[supplier_code_col]) if supplier_code_col != "(None)" else ""
+        out["Pharmacode"] = safe_str(df[pharmacode_col]) if pharmacode_col !="(None)" else ""
         out["Retail"] = parse_money(df[retail_col]).round(decimals)
         out["Cost"] = parse_money(df[cost_col]).round(decimals)
 
         trade = combine_columns(df, desc_cols, sep=desc_sep) if desc_cols else pd.Series([""] * len(df), index=df.index)
+        trade = clean_description(trade)
         if title_case:
             trade = trade.str.title()
         if normalize_units_flag:
@@ -184,31 +198,31 @@ if mode == "Price File":
                 out["TradeName"], change_count = apply_replacements(out["TradeName"], rules_df, whole_word=whole_word, case_insensitive=case_insensitive)
                 st.success(f"Applied rules. Total replacements made: {change_count}")
 
-        # Validate TradeName length
-        out["DescLen"] = desc_len(out["TradeName"])
-        out["InvalidDesc"] = out["DescLen"] > MAX_DESC_LEN
+      # --- TEMP: disable TradeName > 40 char validation UI ---
+# out["DescLen"] = desc_len(out["TradeName"])
+# out["InvalidDesc"] = out["DescLen"] > MAX_DESC_LEN
+# invalid = out[out["InvalidDesc"]].copy()
+#
+# st.subheader("TradeNames over 40 characters (fix these first)")
+# if len(invalid) == 0:
+#     st.success("All TradeNames are 40 characters or less ✅")
+# else:
+#     st.dataframe(highlight_invalid_tradename(invalid[["PLU", "TradeName", "DescLen"]]), use_container_width=True, height=250)
+#     edited_invalid = st.data_editor(
+#         invalid[["PLU", "TradeName"]],
+#         use_container_width=True,
+#         height=350,
+#         num_rows="fixed",
+#         column_config={
+#             "PLU": st.column_config.TextColumn("PLU", disabled=True),
+#             "TradeName": st.column_config.TextColumn("TradeName", help=f"Max {MAX_DESC_LEN} characters"),
+#         },
+#         key="invalid_desc_editor",
+#     )
+#     out.loc[invalid.index, "TradeName"] = safe_str(edited_invalid["TradeName"])
+#     out["DescLen"] = desc_len(out["TradeName"])
+#     out["InvalidDesc"] = out["DescLen"] > MAX_DESC_LEN
 
-        invalid = out[out["InvalidDesc"]].copy()
-
-        st.subheader("TradeNames over 40 characters (fix these first)")
-        if len(invalid) == 0:
-            st.success("All TradeNames are 40 characters or less ✅")
-        else:
-            st.dataframe(highlight_invalid_tradename(invalid[["PLU", "TradeName", "DescLen"]]), use_container_width=True, height=250)
-            edited_invalid = st.data_editor(
-                invalid[["PLU", "TradeName"]],
-                use_container_width=True,
-                height=350,
-                num_rows="fixed",
-                column_config={
-                    "PLU": st.column_config.TextColumn("PLU", disabled=True),
-                    "TradeName": st.column_config.TextColumn("TradeName", help=f"Max {MAX_DESC_LEN} characters"),
-                },
-                key="invalid_desc_editor",
-            )
-            out.loc[invalid.index, "TradeName"] = safe_str(edited_invalid["TradeName"])
-            out["DescLen"] = desc_len(out["TradeName"])
-            out["InvalidDesc"] = out["DescLen"] > MAX_DESC_LEN
 
         export_df = out.drop(columns=["DescLen", "InvalidDesc"], errors="ignore").copy()
         if "TradeName" in export_df.columns:
@@ -340,7 +354,7 @@ elif mode == "Specials File":
 
     # ---- Editable editor (POC) ----
     st.subheader("Edit specials (POC)")
-    st.caption("Editing limited to selected fields for now. We’ll automate more later.")
+    st.caption("Editing limited to selected fields")
 
     cols_to_edit = [c for c in EDITABLE_COLS if c in parsed.columns]
     cols_to_show = []

@@ -7,6 +7,7 @@ import os
 import pyodbc
 
 import pandas as pd
+from decimal import Decimal, ROUND_HALF_UP 
 
 MAX_DESC_LEN = 40
 
@@ -116,7 +117,19 @@ def normalize_units(tradename: pd.Series) -> pd.Series:
     s = s.str.replace(pattern, r"\1\2", regex=True)
     s = s.str.replace(r"\s{2,}", " ", regex=True).str.strip()
     return s
+def clean_description(series: pd.Series) -> pd.Series:
+    s = series.astype("string").fillna("")
 
+    # Remove trademark + similar symbols
+    s = s.str.replace(r"[™®©]", "", regex=True)
+
+    # Remove any other weird unicode symbols but keep letters/numbers/basic punctuation
+    s = s.str.replace(r"[^\w\s\-\.,%/()]", "", regex=True)
+
+    # Collapse double spaces
+    s = s.str.replace(r"\s{2,}", " ", regex=True).str.strip()
+
+    return s
 
 # ----------------------------
 # Money parsing + validation
@@ -130,7 +143,14 @@ def parse_money(series) -> pd.Series:
         s = s.str.replace(".", "", regex=False)
         s = s.str.replace(",", ".", regex=False)
 
-    return pd.to_numeric(s, errors="coerce")
+    nums =  pd.to_numeric(s, errors="coerce")
+
+    def round_money(x):
+        if pd.isna(x):
+            return x
+        return float(Decimal(str(x)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
+    return nums.apply(round_money)
+
 
 
 def desc_len(series) -> pd.Series:

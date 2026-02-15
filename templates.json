@@ -8,7 +8,8 @@
           "column": "Cost Price (List cost or Wholesale cost) excl GST"
         },
         "barcode": { "column": "Barcode" },
-        "sc": { "column": "Supplier Code (Product Code)" }
+        "sc": { "column": "Supplier Code (Product Code)" },
+        "pharmacode":{ "column":"Pharmacode" }
       },
       "description": {
         "columns": [
@@ -36,7 +37,8 @@
         "retail": { "column": "Retail" },
         "cost": { "column": "Cost" },
         "barcode": { "column": "Barcode" },
-        "sc": { "column": "Supplier Code (Product Code)" }
+        "sc": { "column": "Supplier Code (Product Code)" },
+         "pharmacode":{"column":"Pharmacode"}
       },
       "description": {
         "columns": ["TradeName", "Strength", "PackSize"],
@@ -60,7 +62,8 @@
           "match_terms": ["cost", "ctc", "wholesale", "landed", "buy"]
         },
         "barcode": { "match_terms": ["barcode", "ean", "gtin"] },
-        "sc": { "column": "Supplier Code (Product Code)" }
+        "sc": { "column": "Supplier Code (Product Code)" },
+         "pharmacode":{"column":"Pharmacode"}
       },
       "description": {
         "columns_match_terms": [

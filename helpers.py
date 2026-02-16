@@ -8,6 +8,8 @@ import pyodbc
 
 import pandas as pd
 from decimal import Decimal, ROUND_HALF_UP 
+from datetime import datetime
+import uuid
 
 MAX_DESC_LEN = 40
 
@@ -205,47 +207,60 @@ def apply_replacements(
     s = s.str.replace(r"\s{2,}", " ", regex=True).str.strip()
     return s, total
 
-##Save to Access
-def save_pricefile_lines_to_access(export_df: pd.DataFrame, supplier_id: int):
-    # Adjust table/column names to your actual Access table
-    target_table = "PriceFileLine"
+# ----------------------------
+# Access DB helpers
+# ----------------------------
+ACCESS_PASSWORD = "LOCKIE MONDAY"
+ACCESS_FILE = "suppliers.mdb"   # <-- make sure this matches your actual filename
 
-    # Ensure expected cols exist (and in right types)
-    df = export_df.copy()
-    df["SupplierID"] = supplier_id
-
-    # Order columns to match INSERT statement
-    cols = ["SupplierID", "PLU", "Supplier_Code", "TradeName", "Retail", "Cost", "Barcode"]
-    for c in cols:
-        if c not in df.columns:
-            df[c] = ""
-
-    insert_sql = f"""
-        INSERT INTO {target_table}
-            (SupplierID, PLU, Supplier_Code, TradeName, Retail, Cost, Barcode)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    """
-
-    rows = df[cols].itertuples(index=False, name=None)
-
-    with get_access_conn() as conn:
-        cur = conn.cursor()
-        cur.fast_executemany = True
-        cur.executemany(insert_sql, list(rows))
-        conn.commit()
 def get_access_conn():
-    db_path = os.path.join(os.getcwd(), "suppliers.mdb")
-    pwd = "LOCKIE MONDAY"
-
+    db_path = os.path.join(os.getcwd(), ACCESS_FILE)
     conn_str = (
         r"DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};"
         rf"DBQ={db_path};"
-        rf"PWD={pwd};"
+        rf"PWD={ACCESS_PASSWORD};"
     )
     return pyodbc.connect(conn_str)
+
 def load_suppliers():
-    conn = get_access_conn()
-    query = "SELECT SupplierID, SupplierName FROM Suppliers"
-    suppliers_df = pd.read_sql(query, conn)
-    conn.close()
-    return suppliers_df
+    with get_access_conn() as conn:
+
+        sql = """
+        SELECT SupplierID, SupplierName, SupplierCode
+        FROM Suppliers
+        ORDER BY SupplierName
+        """
+        return pd.read_sql(sql, conn)
+def new_guid():
+    return uuid.uuid4().hex.upper()
+
+def save_to_details(export_df: pd.DataFrame, supplier_id: int, mark_updated: bool = True):
+    df = export_df.copy()
+
+    df["SupplierID"] = int(supplier_id)
+    df["Code"] = df.get("Supplier_Code", "").fillna("").astype(str)
+    df["Description"] = df.get("TradeName", "").fillna("").astype(str).str.slice(0, MAX_DESC_LEN)
+    df["Pharmacode"] = df.get("Pharmacode","").fillna("").astype(str)
+    df["Cost"] = pd.to_numeric(df.get("Cost", 0), errors="coerce").fillna(0.0)
+    df["Retail"] = pd.to_numeric(df.get("Retail", 0), errors="coerce").fillna(0.0)
+
+    df["Barcode"] = df.get("Barcode", "").fillna("").astype(str)
+    df["Updated"] = bool(mark_updated)
+    df["LastUpdated"] = datetime.now()
+    df["PartCodeGuid"] = new_guid()
+    df["StockCodeGuid"]= new_guid()
+    
+
+    insert_sql = """
+        INSERT INTO Details
+            ([SupplierID], [Code], [Description], [Pharmacode], [Cost], [Retail], [Barcode], [Updated], [LastUpdated],[PartCodeGuid],[StockcardGuid])
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?,?,?,?)
+    """
+
+    rows = df[["SupplierID","Code","Description","Pharmacode","Cost","Retail","Barcode","Updated","LastUpdated","PartCodeGuid","StockCodeGuid"]].itertuples(index=False, name=None)
+
+    with get_access_conn() as conn:
+        cur = conn.cursor()
+        cur.fast_executemany = False
+        cur.executemany(insert_sql, list(rows))
+        conn.commit()

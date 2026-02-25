@@ -264,3 +264,71 @@ def save_to_details(export_df: pd.DataFrame, supplier_id: int, mark_updated: boo
         cur.fast_executemany = False
         cur.executemany(insert_sql, list(rows))
         conn.commit()
+
+
+def upsert_details(
+    export_df: pd.DataFrame,
+    supplier_id: int,
+    mark_updated: bool = True,
+    guid_field: str = "PartCodeGuid"
+) -> tuple[int,int]:
+    """
+    Upsert into Access Details table. 
+
+    Match the following to check for existing record:
+      - SupplierID + Barcode
+      - SupplierID + Code (fallback)
+
+      Updates Description, Cost, Retail, Pharmacode and updated timestamp if record exists. Inserts new record if no match found. 
+    """
+    df = export_df.copy()
+
+    # Normalise fields 
+
+    df["SupplierID"] = int(supplier_id)
+    df["Code"] = df.get("Supplier_Code", "").fillna("").astype(str)
+    df["Description"] = df.get("TradeName", "").fillna("").astype(str).str.slice(0, MAX_DESC_LEN)
+    df["Pharmacode"] = df.get("Pharmacode","").fillna("").astype(str)
+    df["Cost"] = pd.to_numeric(df.get("Cost", 0), errors="coerce").fillna(0.0)
+    df["Retail"] = pd.to_numeric(df.get("Retail", 0), errors="coerce").fillna(0.0)
+    df["Barcode"] = df.get("Barcode", "").fillna("").astype(str)
+
+    now = datetime.now()
+    updated_count = 0
+    inserted_count = 0
+
+    #update by barcode (this will be used to update the supplier code if it has changed, which is important for future updates)
+    update_by_barcode_sql ="""
+        UPDATE Details
+        SET [Description] = ?, [Cost] = ?, [Retail] = ?, [Pharmacode] = ?, [Updated] = ?, [LastUpdated] = ?, [PartCodeGuid] = ?
+        WHERE SupplierID = ? AND Barcode = ?
+    """
+
+    #update by supplier code (partcode) - this is the fallback if barcode is missing or has changed
+    update_by_partcode_sql ="""
+        UPDATE Details
+        SET [Description] = ?, [Cost] = ?, [Retail] = ?, [Pharmacode] = ?, [Updated] = ?, [LastUpdated] = ?, [PartCodeGuid] = ?
+        WHERE SupplierID = ? AND Code = ? """
+
+    ### Insert new record if no match found (using the same values as update, plus new GUIDs)
+    insert_sql = f"""
+        INSERT INTO Details
+        ({guid_field}, SupplierID, Code, Description, Pharmacode, Cost, Retail, Barcode, Updated, LastUpdated)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """
+
+    with get_access_conn() as conn:
+        cur = conn.cursor()
+
+        for r in df.intertuples(index=False):
+            supplier = r.SupplierID
+            sup_code = (r.Supplier_Code or "").strip()
+            barcode = (r.Barcode or "").strip()
+            desc = r.Description
+            pharmacode = r.Pharmacode
+            cost = float(r.Cost)
+            retail = float(r.Retail)
+
+            did_update = False
+
+            # Match by barcode first

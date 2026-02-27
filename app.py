@@ -197,6 +197,7 @@ if mode == "Price File":
             st.stop()
 
         # ---- Build output
+       # ---- Build output
         out = pd.DataFrame(index=df.index)
 
         out["PLU"] = safe_str(df[plu_col]) if plu_col != "(None)" else ""
@@ -211,7 +212,9 @@ if mode == "Price File":
             trade = trade.str.title()
         if normalize_units_flag:
             trade = normalize_units(trade)
-        out["TradeName"] = trade
+        
+        # Initialize TradeName and ensure it's string type
+        out["TradeName"] = trade.fillna("").astype(str)
 
         if barcode_col != "(None)":
             out["Barcode"] = safe_str(df[barcode_col])
@@ -237,13 +240,54 @@ if mode == "Price File":
                 )
                 st.success(f"Applied rules. Total replacements made: {change_count}")
 
-        # ---- Export df
-        export_df = out.copy()
-        export_df["TradeName"] = export_df["TradeName"].fillna("").astype("string").str.slice(0, MAX_DESC_LEN)
+        # ---- PREVIEW & MANUAL EDITING ----
+        st.subheader("Output Preview & Editor")
+        st.info("💡 You can edit the **TradeName** cells directly in the table below.")
 
-        st.subheader("Output Preview (Price File)")
-        st.dataframe(export_df, use_container_width=True, height=350)
+        # Add character count column for visibility
+        out["CharCount"] = out["TradeName"].str.len()
+        
+        # Reorder columns to put CharCount next to TradeName
+        cols = list(out.columns)
+        if "TradeName" in cols:
+            idx = cols.index("TradeName")
+            cols.insert(idx + 1, cols.pop(cols.index("CharCount")))
+            out = out[cols]
 
+        # Bulk Truncate Button
+        if st.button("Bulk Truncate all TradeNames to 40 chars"):
+            out["TradeName"] = out["TradeName"].str.slice(0, 40)
+            out["CharCount"] = out["TradeName"].str.len()
+            st.rerun()
+
+        # Use data_editor to allow manual overrides
+        edited_df = st.data_editor(
+            out,
+            use_container_width=True,
+            height=400,
+            column_config={
+                "CharCount": st.column_config.NumberColumn("Chars", help="Length of TradeName", format="%d"),
+                "TradeName": st.column_config.TextColumn("TradeName", width="large", help="Max 40 chars recommended"),
+                "Retail": st.column_config.NumberColumn(format="$%.2f"),
+                "Cost": st.column_config.NumberColumn(format="$%.2f"),
+            },
+            disabled=[c for c in out.columns if c != "TradeName"], # Only allow editing TradeName
+            key=f"editor_{state_tag}"
+        )
+
+        # Update the export_df with edits and recalculate count
+        export_df = edited_df.copy()
+        export_df["CharCount"] = export_df["TradeName"].str.len()
+        
+        # Final safety clip for export (just in case)
+        # export_df["TradeName"] = export_df["TradeName"].str.slice(0, MAX_DESC_LEN)
+
+        # Show warning if any names are still too long
+        long_names = export_df[export_df["CharCount"] > 40]
+        if not long_names.empty:
+            st.warning(f"⚠️ {len(long_names)} items still exceed 40 characters.")
+
+        # ---- Export Actions
         csv_bytes = export_df.to_csv(index=False, sep=out_delim).encode("utf-8")
         st.download_button(
             "Download Price File CSV",

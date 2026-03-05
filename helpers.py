@@ -14,6 +14,23 @@ import uuid
 MAX_DESC_LEN = 40
 
 
+#----------------------------
+#Convert $ to cents and vice versa to keep consisten with RxOne currency
+#----------------------------
+def dollars_to_cents(x) -> int:
+    # Safe conversion: 12.34 -> 1234
+    try:
+        return int(round(float(x) * 100))
+    except Exception:
+        return 0
+
+def cents_to_dollars(x) -> float:
+    # Safe conversion: 1234 -> 12.34
+    try:
+        return float(x) / 100.0
+    except Exception:
+        return 0.0
+
 # ----------------------------
 # File + template loading
 # ----------------------------
@@ -211,7 +228,7 @@ def apply_replacements(
 # Access DB helpers
 # ----------------------------
 ACCESS_PASSWORD = "LOCKIE MONDAY"
-ACCESS_FILE = "suppliers.mdb"   # <-- make sure this matches your actual filename
+ACCESS_FILE = "suppliers.mdb"   # <-- CHANGE to your real filename: supplier.mdb or suppliers.mdb
 
 def get_access_conn():
     db_path = os.path.join(os.getcwd(), ACCESS_FILE)
@@ -224,111 +241,153 @@ def get_access_conn():
 
 def load_suppliers():
     with get_access_conn() as conn:
-
         sql = """
         SELECT SupplierID, SupplierName, SupplierCode
         FROM Suppliers
         ORDER BY SupplierName
         """
         return pd.read_sql(sql, conn)
-def new_guid():
+
+def new_guid_32() -> str:
+    # 32 uppercase hex, no dashes (matches your system)
     return uuid.uuid4().hex.upper()
 
-def save_to_details(export_df: pd.DataFrame, supplier_id: int, mark_updated: bool = True):
-    df = export_df.copy()
-
-    df["SupplierID"] = int(supplier_id)
-    df["Code"] = df.get("Supplier_Code", "").fillna("").astype(str)
-    df["Description"] = df.get("TradeName", "").fillna("").astype(str).str.slice(0, MAX_DESC_LEN)
-    df["Pharmacode"] = df.get("Pharmacode","").fillna("").astype(str)
-    df["Cost"] = pd.to_numeric(df.get("Cost", 0), errors="coerce").fillna(0.0)
-    df["Retail"] = pd.to_numeric(df.get("Retail", 0), errors="coerce").fillna(0.0)
-
-    df["Barcode"] = df.get("Barcode", "").fillna("").astype(str)
-    df["Updated"] = bool(mark_updated)
-    df["LastUpdated"] = datetime.now()
-    df["PartCodeGuid"] = new_guid()
-    df["StockCodeGuid"]= new_guid()
-    
-
-    insert_sql = """
-        INSERT INTO Details
-            ([SupplierID], [Code], [Description], [Pharmacode], [Cost], [Retail], [Barcode], [Updated], [LastUpdated],[PartCodeGuid],[StockcardGuid])
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?,?,?,?)
-    """
-
-    rows = df[["SupplierID","Code","Description","Pharmacode","Cost","Retail","Barcode","Updated","LastUpdated","PartCodeGuid","StockCodeGuid"]].itertuples(index=False, name=None)
-
+def load_details_for_supplier(supplier_id: int) -> pd.DataFrame:
     with get_access_conn() as conn:
-        cur = conn.cursor()
-        cur.fast_executemany = False
-        cur.executemany(insert_sql, list(rows))
-        conn.commit()
-
+        sql = """
+        SELECT SupplierID,
+               Barcode,
+               Code,
+               Description,
+               Pharmacode,
+               Cost,
+               Retail,
+               PartCodeGuid,
+               StockcardGuid
+        FROM Details
+        WHERE SupplierID = ?
+        """
+        return pd.read_sql(sql, conn, params=[supplier_id])
 
 def upsert_details(
     export_df: pd.DataFrame,
     supplier_id: int,
     mark_updated: bool = True,
-    guid_field: str = "PartCodeGuid"
-) -> tuple[int,int]:
+) -> tuple[int, int]:
     """
-    Upsert into Access Details table. 
+    Upsert into Details.
 
-    Match the following to check for existing record:
-      - SupplierID + Barcode
-      - SupplierID + Code (fallback)
+    Match order:
+      1) SupplierID + Barcode  (if barcode present)
+      2) SupplierID + Code     (supplier code)
 
-      Updates Description, Cost, Retail, Pharmacode and updated timestamp if record exists. Inserts new record if no match found. 
+    Update fields:
+      Code, Description, Pharmacode, Cost, Retail, Barcode (where appropriate), Updated, LastUpdated
+
+    Insert fields:
+      PartCodeGuid, StockcardGuid, SupplierID, Code, Description, Pharmacode, Cost, Retail, Barcode, Updated, LastUpdated
     """
     df = export_df.copy()
 
-    # Normalise fields 
-
+    # --- Normalize incoming values ---
     df["SupplierID"] = int(supplier_id)
-    df["Code"] = df.get("Supplier_Code", "").fillna("").astype(str)
+    df["Code"] = df.get("Supplier_Code", "").fillna("").astype(str).str.strip()          # supplier code
+    df["Barcode"] = df.get("Barcode", "").fillna("").astype(str).str.strip()
     df["Description"] = df.get("TradeName", "").fillna("").astype(str).str.slice(0, MAX_DESC_LEN)
-    df["Pharmacode"] = df.get("Pharmacode","").fillna("").astype(str)
+    df["Pharmacode"] = df.get("Pharmacode", "").fillna("").astype(str).str.strip()
     df["Cost"] = pd.to_numeric(df.get("Cost", 0), errors="coerce").fillna(0.0)
     df["Retail"] = pd.to_numeric(df.get("Retail", 0), errors="coerce").fillna(0.0)
-    df["Barcode"] = df.get("Barcode", "").fillna("").astype(str)
 
     now = datetime.now()
-    updated_count = 0
-    inserted_count = 0
+    updated_total = 0
+    inserted_total = 0
 
-    #update by barcode (this will be used to update the supplier code if it has changed, which is important for future updates)
-    update_by_barcode_sql ="""
+    # --- SQL ---
+    update_by_barcode_sql = """
         UPDATE Details
-        SET [Description] = ?, [Cost] = ?, [Retail] = ?, [Pharmacode] = ?, [Updated] = ?, [LastUpdated] = ?, [PartCodeGuid] = ?
-        WHERE SupplierID = ? AND Barcode = ?
+        SET [Code]=?,
+            [Description]=?,
+            [Pharmacode]=?,
+            [Cost]=?,
+            [Retail]=?,
+            [Updated]=?,
+            [LastUpdated]=?
+        WHERE [SupplierID]=? AND [Barcode]=?
     """
 
-    #update by supplier code (partcode) - this is the fallback if barcode is missing or has changed
-    update_by_partcode_sql ="""
+    update_by_code_sql = """
         UPDATE Details
-        SET [Description] = ?, [Cost] = ?, [Retail] = ?, [Pharmacode] = ?, [Updated] = ?, [LastUpdated] = ?, [PartCodeGuid] = ?
-        WHERE SupplierID = ? AND Code = ? """
+        SET [Barcode]=?,
+            [Description]=?,
+            [Pharmacode]=?,
+            [Cost]=?,
+            [Retail]=?,
+            [Updated]=?,
+            [LastUpdated]=?
+        WHERE [SupplierID]=? AND [Code]=?
+    """
 
-    ### Insert new record if no match found (using the same values as update, plus new GUIDs)
-    insert_sql = f"""
+    insert_sql = """
         INSERT INTO Details
-        ({guid_field}, SupplierID, Code, Description, Pharmacode, Cost, Retail, Barcode, Updated, LastUpdated)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ([PartCodeGuid],
+             [StockcardGuid],
+             [SupplierID],
+             [Code],
+             [Description],
+             [Pharmacode],
+             [Cost],
+             [Retail],
+             [Barcode],
+             [Updated],
+             [LastUpdated])
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
 
     with get_access_conn() as conn:
         cur = conn.cursor()
 
-        for r in df.intertuples(index=False):
-            supplier = r.SupplierID
-            sup_code = (r.Supplier_Code or "").strip()
+        for r in df.itertuples(index=False):
+            supplier = int(r.SupplierID)
+            code = (r.Code or "").strip()
             barcode = (r.Barcode or "").strip()
+
             desc = r.Description
-            pharmacode = r.Pharmacode
-            cost = float(r.Cost)
-            retail = float(r.Retail)
+            pharmacode = (r.Pharmacode or "").strip()
+            cost_cents = dollars_to_cents(r.Cost)
+            retail_cents = dollars_to_cents(r.Retail)
 
             did_update = False
 
-            # Match by barcode first
+            # 1) Try barcode match first
+            if barcode:
+                cur.execute(
+                    update_by_barcode_sql,
+                    (code, desc, pharmacode, cost_cents, retail_cents, bool(mark_updated), now, supplier, barcode)
+                )
+                if cur.rowcount and cur.rowcount > 0:
+                    updated_total += int(cur.rowcount)
+                    did_update = True
+
+            # 2) Fallback: try supplier code match
+            if (not did_update) and code:
+                cur.execute(
+                    update_by_code_sql,
+                    (barcode, desc, pharmacode, cost_cents, retail_cents, bool(mark_updated), now, supplier, code)
+                )
+                if cur.rowcount and cur.rowcount > 0:
+                    updated_total += int(cur.rowcount)
+                    did_update = True
+
+            # 3) Insert new
+            if not did_update:
+                part_guid = new_guid_32()
+                stock_guid = new_guid_32()
+                cur.execute(
+                    insert_sql,
+                    (part_guid, stock_guid, supplier, code, desc, pharmacode, cost_cents, retail_cents, barcode, bool(mark_updated), now)
+                )
+                inserted_total += 1
+
+        conn.commit()
+
+    return updated_total, inserted_total

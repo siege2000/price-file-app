@@ -17,7 +17,10 @@ from helpers import (
     tpl_field_default,
     load_suppliers,
     clean_description,
-    save_to_details,   # <-- make sure this exists in helpers
+    
+    load_details_for_supplier,
+    upsert_details,
+   
 )
 
 st.set_page_config(layout="wide")
@@ -242,7 +245,7 @@ if mode == "Price File":
         export_df["TradeName"] = export_df["TradeName"].fillna("").astype("string").str.slice(0, MAX_DESC_LEN)
 
         st.subheader("Output Preview (Price File)")
-        st.dataframe(export_df, use_container_width=True, height=350)
+        st.dataframe(export_df, width="stretch", height=350)
 
         csv_bytes = export_df.to_csv(index=False, sep=out_delim).encode("utf-8")
         st.download_button(
@@ -253,22 +256,115 @@ if mode == "Price File":
             key=f"download_csv_{state_tag}"
         )
 
-        # ---- Save to Access
+        # -------------------------
+        # REVIEW + UPSERT TO ACCESS
+        # -------------------------
         st.divider()
-        st.subheader("Save to Access (supplier.mdb)")
+        st.subheader(f"Save to Access ({'suppliers.mdb'})")
 
         mark_updated = st.checkbox("Mark rows as Updated", value=True, key=f"mark_updated_{state_tag}")
 
-        if st.button("Save these rows into Access → Details", type="primary", key=f"save_access_{state_tag}"):
-            try:
-                save_to_details(export_df, supplier_id, mark_updated=mark_updated)
-                st.success(f"Saved {len(export_df)} rows into Details for {supplier_label}")
-            except Exception as e:
-                st.error(f"Access save failed: {e}")
-                st.exception(e)
+        # Review mode state
+        if "review_mode" not in st.session_state:
+            st.session_state.review_mode = False
 
+        c1, c2, c3 = st.columns([1, 1, 2])
+        with c1:
+            if st.button("Review changes", type="primary", key=f"review_btn_{state_tag}"):
+                st.session_state.review_mode = True
+        with c2:
+            if st.session_state.review_mode:
+                if st.button("Back", key=f"review_back_{state_tag}"):
+                    st.session_state.review_mode = False
+
+        # ----- Review screen -----
+        if st.session_state.review_mode:
+            old_df = load_details_for_supplier(supplier_id)
+
+            # NEW fields
+            new_df = export_df.copy()
+            new_df["SupplierCode"] = new_df.get("Supplier_Code", "").fillna("").astype(str).str.strip()
+            new_df["Barcode"] = new_df.get("Barcode", "").fillna("").astype(str).str.strip()
+            new_df["New_TradeName"] = new_df.get("TradeName", "").fillna("").astype(str)
+            new_df["New_Cost"] = pd.to_numeric(new_df.get("Cost", 0), errors="coerce").fillna(0)
+            new_df["New_Retail"] = pd.to_numeric(new_df.get("Retail", 0), errors="coerce").fillna(0)
+
+            # OLD fields (IMPORTANT: supplier code is Details.Code, tradename is Details.Description)
+            old_df = old_df.copy()
+            old_df["SupplierCode"] = old_df.get("Code", "").fillna("").astype(str).str.strip()
+            old_df["Barcode"] = old_df.get("Barcode", "").fillna("").astype(str).str.strip()
+            old_df["Old_TradeName"] = old_df.get("Description", "").fillna("").astype(str)
+            old_df["Old_Cost"] = old_df["Cost"].fillna(0).astype(int)/100
+            old_df["Old_Retail"] = old_df["Retail"].fillna(0).astype(int)/100
+
+            # --- OR match logic: barcode first, then supplier code for remainder ---
+            new_has_barcode = new_df[new_df["Barcode"] != ""].copy()
+            merged_barcode = new_has_barcode.merge(
+                old_df[["Barcode", "Old_TradeName", "Old_Cost", "Old_Retail"]],
+                on="Barcode",
+                how="left"
+            )
+
+            matched_barcode = merged_barcode["Old_TradeName"].notna() | merged_barcode["Old_Cost"].notna() | merged_barcode["Old_Retail"].notna()
+
+            new_need_supcode = pd.concat([
+                merged_barcode.loc[~matched_barcode, new_df.columns],
+                new_df[new_df["Barcode"] == ""],
+            ], ignore_index=True).drop_duplicates()
+
+            merged_supcode = new_need_supcode.merge(
+                old_df[["SupplierCode", "Old_TradeName", "Old_Cost", "Old_Retail"]],
+                on="SupplierCode",
+                how="left"
+            )
+
+            merged = pd.concat([merged_barcode.loc[matched_barcode], merged_supcode], ignore_index=True)
+
+            merged["Changed"] = (
+                (merged["Old_TradeName"].fillna("") != merged["New_TradeName"].fillna("")) |
+                (merged["Old_Cost"].fillna(-999999) != merged["New_Cost"].fillna(-999999)) |
+                (merged["Old_Retail"].fillna(-999999) != merged["New_Retail"].fillna(-999999))
+            )
+
+            st.subheader("Review changes (old vs new)")
+            st.caption("Blank Old_* means no match found → will be inserted as new.")
+
+            show_only_changes = st.checkbox("Show only changed rows", value=True, key=f"only_changes_{state_tag}")
+            view = merged[merged["Changed"]] if show_only_changes else merged
+
+            # Comparison first, then the rest of the new fields
+            comparison_cols = [
+                "SupplierCode",
+                "Old_TradeName", "New_TradeName",
+                "Old_Cost", "New_Cost",
+                "Old_Retail", "New_Retail",
+            ]
+            other_new_cols = [c for c in export_df.columns if c not in ["TradeName", "Cost", "Retail"]]
+            display_cols = [c for c in (comparison_cols + other_new_cols) if c in view.columns]
+
+            st.dataframe(view[display_cols], width="stretch", height=600)
+
+            st.divider()
+            if st.button("Confirm + Save to Access", type="primary", key=f"confirm_save_{state_tag}"):
+                try:
+                    upd, ins = upsert_details(export_df, supplier_id, mark_updated=mark_updated)
+                    st.success(f"Saved. Updated: {upd} | Inserted: {ins}")
+                    st.session_state.review_mode = False
+                except Exception as e:
+                    st.exception(e)
+
+            st.stop()
+
+        # ----- No review: allow direct save (optional) -----
+        st.caption("Tip: click “Review changes” first to confirm old vs new before saving.")
+        if st.button("Save to Access now (no review)", type="secondary", key=f"save_now_{state_tag}"):
+            try:
+                upd, ins = upsert_details(export_df, supplier_id, mark_updated=mark_updated)
+                st.success(f"Saved. Updated: {upd} | Inserted: {ins}")
+            except Exception as e:
+                st.exception(e)
     except Exception as e:
-        st.error(f"An error occurred: {e}")
+            st.error(f"An error has occurred: {e}")
 
 # -------------------------
 # SPECIALS FILE MODE

@@ -1,0 +1,93 @@
+{
+  "90": {
+    "template": "Toniq",
+    "skip_rows": 0,
+    "columns": {
+      "plu": "(None)",
+      "pharmacode": "PharmaCode",
+      "retail": "RetailPrice",
+      "cost": "CostPrice",
+      "barcode": "Barcode",
+      "sc": "Code"
+    },
+    "description": {
+      "columns": [
+        "Description"
+      ],
+      "separator": " ",
+      "title_case": true,
+      "normalize_units": true
+    }
+  },
+  "187": {
+    "template": "Toniq",
+    "skip_rows": 0,
+    "columns": {
+      "plu": "(None)",
+      "pharmacode": "Pharmacode",
+      "retail": "RRP",
+      "cost": "CTC",
+      "barcode": "Barcode",
+      "sc": "Pharmacode",
+      "outer": "Casepack"
+    },
+    "description": {
+      "columns": [
+        "Description"
+      ],
+      "prefix": "",
+      "separator": " ",
+      "title_case": true,
+      "normalize_units": true
+    }
+  },
+  "510": {
+    "template": "RxOne",
+    "skip_rows": 0,
+    "columns": {
+      "plu": "(None)",
+      "pharmacode": "Pharmacode",
+      "retail": "RRP",
+      "cost": "W/Sale",
+      "barcode": "Barcode",
+      "sc": "Product Code",
+      "outer": "(None)"
+    },
+    "description": {
+      "columns": [
+        "Description",
+        "ML"
+      ],
+      "prefix": "HH",
+      "separator": " ",
+      "title_case": false,
+      "normalize_units": true
+    }
+  },
+  "342": {
+    "template": "Toniq",
+    "skip_rows": 0,
+    "columns": {
+      "plu": "(None)",
+      "pharmacode": "Pharmacode",
+      "retail": "RRP (incl GST)",
+      "cost": "Cost Price (List cost or Wholesale cost) excl GST",
+      "barcode": "Barcode",
+      "sc": "Pharmacode",
+      "outer": "(None)"
+    },
+    "description": {
+      "columns": [
+        "Brand",
+        "Product Name",
+        "Colour/ Shade",
+        "Size (Net Content)",
+        "Unit of Measure"
+      ],
+      "prefix": "",
+      "separator": " ",
+      "title_case": true,
+      "normalize_units": true
+    }
+  }
+}

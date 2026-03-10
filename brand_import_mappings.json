@@ -1,0 +1,36 @@
+{
+  "_comment": "Per-brand import column mappings for the Specials Import screen.",
+  "_instructions": [
+    "Key = Brand name exactly as stored in the Access Brand table.",
+    "columns: maps each field role to the Excel/CSV column header name.",
+    "  Use a list to try multiple names in order (first match wins).",
+    "rules.group_id:    'sequential_by_deal_name' | 'from_column:<col>'",
+    "rules.flybuys:     true | false",
+    "rules.lowest_free: 'disc_pct_and_multibuy_gt1' | 'from_column:<col>' | 'always_false'",
+    "rules.special_price: 'product_price_then_disc_pct' (default) | 'direct_column:<col>'"
+  ],
+
+  "GXH": {
+    "_description": "Green Cross Health — RxOne Excel export format",
+    "columns": {
+      "barcode":           "Barcodes",
+      "description":       "Product name",
+      "pos_note":          "Promotion POS note",
+      "multibuy":          "Min qty",
+      "multibuy_fallback": "Quantity breaks",
+      "deal_name":         "Deal name",
+      "product_price":     "Product price",
+      "discount_type":     "Deal discount type",
+      "discount_value":    "Deal discount value",
+      "special_name":      "Promotion name",
+      "start_date":        "Promotion start date",
+      "end_date":          "Promotion end date"
+    },
+    "rules": {
+      "group_id":     "sequential_by_deal_name",
+      "flybuys":      false,
+      "lowest_free":  "disc_pct_and_multibuy_gt1",
+      "special_price": "product_price_then_disc_pct"
+    }
+  }
+}

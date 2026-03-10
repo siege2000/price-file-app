@@ -1,0 +1,710 @@
+{
+  "_readme": [
+    "Per-supplier description shortening rules.",
+    "Key = SupplierID (integer, as a string).",
+    "Each rule has 'from' and 'to'.",
+    "Rules are applied as whole-word, case-insensitive replacements during Build Output.",
+    "Prefix 'from' with 'regex:' to use a regular expression instead of a literal match.",
+    "Examples shown below use SupplierID 0 — replace 0 with the real SupplierID from Access."
+  ],
+  "90": [
+    {
+      "from": "Natio",
+      "to": "Nat"
+    },
+    {
+      "from": "Complete",
+      "to": "Cmpl"
+    },
+    {
+      "from": "regex:(\\d+)\\s*Tablets",
+      "to": "\\1Tab"
+    },
+    {
+      "from": "Sally Hansen",
+      "to": "SH"
+    },
+    {
+      "from": "Purely Radiant",
+      "to": "P/Rad"
+    },
+    {
+      "from": "Minute",
+      "to": "Min"
+    }
+  ],
+  "187": [
+    {
+      "from": "Remover",
+      "to": "Rem"
+    }
+  ],
+  "510": [
+    {
+      "from": "250",
+      "to": "250ml"
+    },
+    {
+      "from": "500",
+      "to": "500ml"
+    },
+    {
+      "from": "100",
+      "to": "100ml"
+    },
+    {
+      "from": "150",
+      "to": "150ml"
+    },
+    {
+      "from": "Malcolm Harkers Health Healing",
+      "to": ""
+    },
+    {
+      "from": "30ml 30",
+      "to": "30ml"
+    },
+    {
+      "from": "100ML 100",
+      "to": "100ML"
+    },
+    {
+      "from": "100ml 100ml",
+      "to": "100ml"
+    },
+    {
+      "from": "60 caps 160",
+      "to": "60 caps"
+    },
+    {
+      "from": "90 caps 160",
+      "to": "90 caps"
+    },
+    {
+      "from": "130",
+      "to": "130ml"
+    }
+  ],
+  "342": [
+    {
+      "from": "Cucumber",
+      "to": "Ccmbr"
+    },
+    {
+      "from": "Water",
+      "to": "Wtr"
+    },
+    {
+      "from": "Green",
+      "to": "Grn"
+    },
+    {
+      "from": "Spray",
+      "to": "Spry"
+    },
+    {
+      "from": "Cotton",
+      "to": "Cttn"
+    },
+    {
+      "from": "Cream",
+      "to": "Crm"
+    },
+    {
+      "from": "Exfoliating",
+      "to": "Exfltng"
+    },
+    {
+      "from": "-",
+      "to": ""
+    },
+    {
+      "from": "Conditioner",
+      "to": "Cndtnr"
+    },
+    {
+      "from": "Liquid",
+      "to": "Lqd"
+    },
+    {
+      "from": "Fragrance",
+      "to": "Frgrnc"
+    },
+    {
+      "from": "Shampoo",
+      "to": "Shmp"
+    },
+    {
+      "from": "Shower",
+      "to": "Shwr"
+    },
+    {
+      "from": "Apothecary",
+      "to": "Apthcry"
+    },
+    {
+      "from": "Moisturiser",
+      "to": "Mstrsr"
+    },
+    {
+      "from": "Butter",
+      "to": "Bttr"
+    },
+    {
+      "from": "Lotion",
+      "to": "Ltn"
+    },
+    {
+      "from": "Olive Oil",
+      "to": "O/O"
+    },
+    {
+      "from": "With",
+      "to": "w"
+    },
+    {
+      "from": "Laura Ashley",
+      "to": "L/A"
+    },
+    {
+      "from": "Freeman",
+      "to": "Frmn"
+    },
+    {
+      "from": "Peppermint & Plum",
+      "to": "Ppprmnt&Plum"
+    },
+    {
+      "from": "Naturally European",
+      "to": "Ntrly Erpn"
+    },
+    {
+      "from": "Velvet Moisture",
+      "to": "Vlvt Mstr"
+    },
+    {
+      "from": "Organic",
+      "to": "Org"
+    },
+    {
+      "from": "Nesti Philosophia",
+      "to": "Nst Phlsph"
+    },
+    {
+      "from": "Nesti Dolce Vivere",
+      "to": "Nst Dlc Vvr"
+    },
+    {
+      "from": "Tropical",
+      "to": "Trpcl"
+    },
+    {
+      "from": "Pure Bamboo",
+      "to": "Pr Bmb"
+    },
+    {
+      "from": "capewest",
+      "to": "cw"
+    },
+    {
+      "from": "chamomile",
+      "to": "cham"
+    },
+    {
+      "from": "lavender",
+      "to": "lav"
+    },
+    {
+      "from": "Aromatherapy",
+      "to": "Aroma"
+    },
+    {
+      "from": "Black Pepper & Ginger",
+      "to": "Blk Pepper&Gngr"
+    },
+    {
+      "from": "Lemongrass",
+      "to": "Lmngrass"
+    },
+    {
+      "from": "luxury",
+      "to": "lux"
+    },
+    {
+      "from": "Handcrm",
+      "to": "H/Cr"
+    },
+    {
+      "from": "Nude By Nature",
+      "to": "NBN"
+    },
+    {
+      "from": "Mineral Cover",
+      "to": "M/Cov"
+    },
+    {
+      "from": "Moisture Infusion",
+      "to": "M/Inf"
+    },
+    {
+      "from": "magnolia",
+      "to": "Magno"
+    },
+    {
+      "from": "geranium",
+      "to": "Geran"
+    },
+    {
+      "from": "antipollution",
+      "to": "Antipoltn"
+    },
+    {
+      "from": "reed diffuser",
+      "to": "R/Diffuser"
+    },
+    {
+      "from": "luxuries",
+      "to": "Lux"
+    },
+    {
+      "from": "body bttr",
+      "to": "B/Bttr"
+    },
+    {
+      "from": "hand crm",
+      "to": "H/Crm"
+    },
+    {
+      "from": "perfume",
+      "to": "Perf"
+    },
+    {
+      "from": "flower",
+      "to": "Flwr"
+    },
+    {
+      "from": "gardenia",
+      "to": "Gard."
+    },
+    {
+      "from": "body scrub",
+      "to": "B/Scrub"
+    },
+    {
+      "from": "crystal",
+      "to": "Cryst"
+    },
+    {
+      "from": "fragrant",
+      "to": "Frag"
+    },
+    {
+      "from": "Faith in nature",
+      "to": "FiN"
+    },
+    {
+      "from": "happy naturals",
+      "to": "HN"
+    },
+    {
+      "from": "body wash",
+      "to": "B/wash"
+    },
+    {
+      "from": "Bath & Body",
+      "to": "B&B"
+    },
+    {
+      "from": "lipstick",
+      "to": "L/stick"
+    },
+    {
+      "from": "powder",
+      "to": "Pwd"
+    },
+    {
+      "from": "hydrating",
+      "to": "Hydrate"
+    },
+    {
+      "from": "solution",
+      "to": "Soln"
+    },
+    {
+      "from": "perfecting",
+      "to": "Perfect"
+    },
+    {
+      "from": "smoothing",
+      "to": "Smooth"
+    },
+    {
+      "from": "boutique",
+      "to": "Boutq"
+    },
+    {
+      "from": "marshmallow",
+      "to": "M/mallow"
+    },
+    {
+      "from": "vitamin",
+      "to": "Vit"
+    },
+    {
+      "from": "brightening",
+      "to": "Brighten"
+    },
+    {
+      "from": "moisture",
+      "to": "Moist"
+    },
+    {
+      "from": "lip balm",
+      "to": "l/balm"
+    },
+    {
+      "from": "serum",
+      "to": "srm"
+    },
+    {
+      "from": "skin perfector",
+      "to": "perfector"
+    },
+    {
+      "from": "tinted",
+      "to": "tint"
+    },
+    {
+      "from": "porcelain",
+      "to": "porce"
+    },
+    {
+      "from": "natural",
+      "to": "nat"
+    },
+    {
+      "from": "golden",
+      "to": "gldn"
+    },
+    {
+      "from": "foundation",
+      "to": "fdn"
+    },
+    {
+      "from": "soft",
+      "to": "sft"
+    },
+    {
+      "from": "classic",
+      "to": "clsc"
+    },
+    {
+      "from": "treatment",
+      "to": "Tx"
+    },
+    {
+      "from": "tangle teezer",
+      "to": "t/teezer"
+    },
+    {
+      "from": "ministry of soap",
+      "to": "mos"
+    },
+    {
+      "from": "hand wash",
+      "to": "h/wash"
+    },
+    {
+      "from": "bubble up",
+      "to": "b/u"
+    },
+    {
+      "from": "mouldable",
+      "to": "mould"
+    },
+    {
+      "from": "bubble bath",
+      "to": "b/bath"
+    },
+    {
+      "from": "regular",
+      "to": "reg"
+    },
+    {
+      "from": "large",
+      "to": "Lg"
+    },
+    {
+      "from": "black",
+      "to": "blk"
+    },
+    {
+      "from": "giannini",
+      "to": "giann"
+    },
+    {
+      "from": "umberto",
+      "to": "umb"
+    },
+    {
+      "from": "moisturising",
+      "to": "moist"
+    },
+    {
+      "from": "The Somerset Toiletry Co",
+      "to": "tstc"
+    },
+    {
+      "from": "Montagne Jeunesse",
+      "to": "mj"
+    },
+    {
+      "from": "diffuser",
+      "to": "diff"
+    },
+    {
+      "from": "bronze",
+      "to": "brnz"
+    },
+    {
+      "from": "creme",
+      "to": "crm"
+    },
+    {
+      "from": "passionfruit",
+      "to": "p/fruit"
+    },
+    {
+      "from": "protein",
+      "to": "pro"
+    },
+    {
+      "from": "raspberry",
+      "to": "r/berry"
+    },
+    {
+      "from": "coconut",
+      "to": "c/nut"
+    },
+    {
+      "from": "pineapple",
+      "to": "p/apple"
+    },
+    {
+      "from": "medium",
+      "to": "med"
+    },
+    {
+      "from": "ultra",
+      "to": "ult"
+    },
+    {
+      "from": "extreme",
+      "to": "xtrm"
+    },
+    {
+      "from": "dark",
+      "to": "drk"
+    },
+    {
+      "from": "self tan",
+      "to": "s/t"
+    },
+    {
+      "from": "mousse",
+      "to": "msse"
+    },
+    {
+      "from": "light",
+      "to": "lt"
+    },
+    {
+      "from": "to",
+      "to": "-"
+    },
+    {
+      "from": "base",
+      "to": "bs"
+    },
+    {
+      "from": "heathcote and ivory",
+      "to": "h&i"
+    },
+    {
+      "from": "tanning",
+      "to": "tan"
+    },
+    {
+      "from": "supple skin",
+      "to": "s/skin"
+    },
+    {
+      "from": "nourish & glow",
+      "to": "n&g"
+    },
+    {
+      "from": "smooth & remove",
+      "to": "s&r"
+    },
+    {
+      "from": "pink",
+      "to": "pnk"
+    },
+    {
+      "from": "plant",
+      "to": "plnt"
+    },
+    {
+      "from": "detangling",
+      "to": "detangle"
+    },
+    {
+      "from": "bath & shwr",
+      "to": "b&s"
+    },
+    {
+      "from": "orange",
+      "to": "orgn"
+    },
+    {
+      "from": "mor boutq",
+      "to": "mor"
+    },
+    {
+      "from": "repair & care",
+      "to": "repr&care"
+    },
+    {
+      "from": "yellow",
+      "to": "yllw"
+    },
+    {
+      "from": "small",
+      "to": "sm"
+    },
+    {
+      "from": "blue",
+      "to": "bl"
+    },
+    {
+      "from": "sft & gentle",
+      "to": "s&g"
+    },
+    {
+      "from": "s&g roll",
+      "to": "s&g"
+    },
+    {
+      "from": "antiperspirant",
+      "to": "antipers"
+    },
+    {
+      "from": "in the garden",
+      "to": "garden"
+    },
+    {
+      "from": "sweet pea",
+      "to": "s/pea"
+    },
+    {
+      "from": "honeysuckle",
+      "to": "h/suckle"
+    },
+    {
+      "from": "hand & nail",
+      "to": "h&n"
+    },
+    {
+      "from": "hand & body",
+      "to": "h&b"
+    },
+    {
+      "from": "collection",
+      "to": "cltn"
+    },
+    {
+      "from": "flwr of focus",
+      "to": "flwr focus"
+    },
+    {
+      "from": "revival",
+      "to": "rev"
+    },
+    {
+      "from": "scented",
+      "to": "scent"
+    },
+    {
+      "from": "shaped",
+      "to": "shp"
+    },
+    {
+      "from": "essentials",
+      "to": "ess"
+    },
+    {
+      "from": "hand care",
+      "to": "h/care"
+    },
+    {
+      "from": "william morris",
+      "to": "wm"
+    },
+    {
+      "from": "7thheaven",
+      "to": "7thh"
+    },
+    {
+      "from": "bamboo",
+      "to": "bamb"
+    },
+    {
+      "from": "charcoal",
+      "to": "char"
+    },
+    {
+      "from": "TheSomersetToiletryCo",
+      "to": "tstc"
+    },
+    {
+      "from": "Thesomersetiletryco",
+      "to": "tstc"
+    },
+    {
+      "from": "MontagneJeunesse",
+      "to": "MJ"
+    },
+    {
+      "from": "heaven",
+      "to": "hvn"
+    },
+    {
+      "from": "chocolate",
+      "to": "choc"
+    },
+    {
+      "from": "purifying",
+      "to": "purify"
+    },
+    {
+      "from": "clearing",
+      "to": "clr"
+    },
+    {
+      "from": "sachet",
+      "to": "sach"
+    },
+    {
+      "from": "nurturing",
+      "to": "nurtur"
+    },
+    {
+      "from": "night",
+      "to": "N"
+    },
+    {
+      "from": "Burts Bees",
+      "to": "BB"
+    }
+  ]
+}

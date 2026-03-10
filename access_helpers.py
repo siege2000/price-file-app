@@ -42,21 +42,33 @@ def save_to_details(export_df: pd.DataFrame, supplier_id: int, mark_updated: boo
     df["Code"] = df.get("Supplier_Code", "").fillna("").astype(str)
     df["Description"] = df.get("TradeName", "").fillna("").astype(str).str.slice(0, MAX_DESC_LEN)
     df["Pharmacode"] = df.get("Pharmacode", "").fillna("").astype(str)
-    df["Cost"] = pd.to_numeric(df.get("Cost", 0), errors="coerce").fillna(0.0)
-    df["Retail"] = pd.to_numeric(df.get("Retail", 0), errors="coerce").fillna(0.0)
+    df["Cost"] = (pd.to_numeric(df.get("Cost", 0), errors="coerce").fillna(0.0) * 100).round().astype(int)
+    df["Retail"] = (pd.to_numeric(df.get("Retail", 0), errors="coerce").fillna(0.0) * 100).round().astype(int)
     df["Barcode"] = df.get("Barcode", "").fillna("").astype(str)
+    if "Outers" in df.columns:
+        df["Outers"] = pd.to_numeric(df["Outers"], errors="coerce").fillna(0).round().astype(int)
+        df["Outers"] = df["Outers"].where(df["Outers"] > 0, 1)
+    else:
+        df["Outers"] = 1
+    now = datetime.now()
     df["Updated"] = bool(mark_updated)
-    df["LastUpdated"] = datetime.now()
-    df["PartCodeGuid"] = new_guid()
-    df["StockCodeGuid"] = new_guid()
+    df["LastUpdated"] = now
+    df["DateCreated"] = now
+    df["LastChange"] = now
+    df["PartCodeGuid"] = [new_guid() for _ in range(len(df))]
+    df["StockcardGuid"] = [new_guid() for _ in range(len(df))]
 
     insert_sql = """
         INSERT INTO Details
-            ([SupplierID], [Code], [Description], [Pharmacode], [Cost], [Retail], [Barcode], [Updated], [LastUpdated],[PartCodeGuid],[StockcardGuid])
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?,?,?,?)
+            ([SupplierID], [Code], [Description], [Pharmacode], [Cost], [Retail], [Barcode],
+             [Outers], [Updated], [LastUpdated], [DateCreated], [LastChange],
+             [PartCodeGuid], [StockcardGuid])
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
 
-    rows = df[["SupplierID", "Code", "Description", "Pharmacode", "Cost", "Retail", "Barcode", "Updated", "LastUpdated", "PartCodeGuid", "StockCodeGuid"]].itertuples(index=False, name=None)
+    rows = df[["SupplierID", "Code", "Description", "Pharmacode", "Cost", "Retail", "Barcode",
+               "Outers", "Updated", "LastUpdated", "DateCreated", "LastChange",
+               "PartCodeGuid", "StockcardGuid"]].itertuples(index=False, name=None)
 
     with get_access_conn() as conn:
         cur = conn.cursor()
@@ -76,13 +88,13 @@ def load_supplier_details(supplier_id: int) -> pd.DataFrame:
         return pd.read_sql(sql, conn, params=[int(supplier_id)])
 
 
-def build_upsert_preview(export_df: pd.DataFrame, supplier_id: int) -> pd.DataFrame:
+def build_upsert_preview(
+    export_df: pd.DataFrame, supplier_id: int
+) -> tuple[pd.DataFrame, dict]:
     """
     Compare export_df against existing Details records for the supplier.
 
-    Returns a preview DataFrame with Status (NEW/UPDATE), old and new values
-    for Description, Cost and Retail only.
-
+    Returns (preview_df, stats) where stats contains match diagnostics.
     Match order: Supplier+Code first, then Barcode fallback.
     New entries are sorted to the top.
     """
@@ -102,24 +114,39 @@ def build_upsert_preview(export_df: pd.DataFrame, supplier_id: int) -> pd.DataFr
     df = export_df.copy()
     df["_Code"] = df.get("Supplier_Code", "").fillna("").astype(str).str.strip()
     df["_Barcode"] = df.get("Barcode", "").fillna("").astype(str).str.strip()
-    df["_Description"] = df.get("TradeName", "").fillna("").astype(str).str.slice(0, MAX_DESC_LEN)
+    df["_PLU"] = df.get("PLU", "").fillna("").astype(str).str.strip()
+    df["_Pharmacode"] = df.get("Pharmacode", "").fillna("").astype(str).str.strip()
+    df["_Description"] = df.get("TradeName", "").fillna("").astype(str)
     df["_Cost"] = pd.to_numeric(df.get("Cost", 0), errors="coerce").fillna(0.0)
     df["_Retail"] = pd.to_numeric(df.get("Retail", 0), errors="coerce").fillna(0.0)
+    if "Outers" in df.columns:
+        _Outers = pd.to_numeric(df["Outers"], errors="coerce").fillna(0).round().astype(int)
+        df["_Outers"] = _Outers.where(_Outers > 0, 1)
+    else:
+        df["_Outers"] = 1
 
     rows = []
+    matched_by_code = 0
+    matched_by_barcode = 0
+
     for _, r in df.iterrows():
         code = r["_Code"]
         barcode = r["_Barcode"]
+        plu = r["_PLU"]
+        pharmacode = r["_Pharmacode"]
         desc = r["_Description"]
         cost = float(r["_Cost"])
         retail = float(r["_Retail"])
+        Outers = int(r["_Outers"])
 
         existing_row = None
         # Match by supplier code first, then barcode
         if code and code in by_code:
             existing_row = by_code[code]
+            matched_by_code += 1
         elif barcode and barcode in by_barcode:
             existing_row = by_barcode[barcode]
+            matched_by_barcode += 1
 
         if existing_row is None:
             status = "NEW"
@@ -128,14 +155,17 @@ def build_upsert_preview(export_df: pd.DataFrame, supplier_id: int) -> pd.DataFr
             old_retail = None
         else:
             old_desc = str(existing_row["Description"] or "")
-            old_cost = float(existing_row["Cost"] or 0)
-            old_retail = float(existing_row["Retail"] or 0)
+            old_cost = float(existing_row["Cost"] or 0) / 100
+            old_retail = float(existing_row["Retail"] or 0) / 100
             status = "UPDATE"
 
         rows.append({
             "Status": status,
             "Supplier_Code": code,
             "Barcode": barcode,
+            "PLU": plu,
+            "Pharmacode": pharmacode,
+            "Outers": Outers,
             "Old_Description": old_desc,
             "New_Description": desc,
             "Old_Cost": old_cost,
@@ -148,7 +178,29 @@ def build_upsert_preview(export_df: pd.DataFrame, supplier_id: int) -> pd.DataFr
     # NEW entries first
     preview["_sort"] = preview["Status"].map({"NEW": 0, "UPDATE": 1})
     preview = preview.sort_values("_sort").drop(columns=["_sort"]).reset_index(drop=True)
-    return preview
+
+    # Sample values for diagnostics (up to 8 each)
+    def _sample(values):
+        seen = []
+        for v in values:
+            if v and v not in seen:
+                seen.append(v)
+            if len(seen) >= 8:
+                break
+        return seen
+
+    stats = {
+        "existing_count": len(existing),
+        "access_codes": _sample(by_code.keys()),
+        "access_barcodes": _sample(by_barcode.keys()),
+        "export_codes": _sample(df["_Code"].tolist()),
+        "export_barcodes": _sample(df["_Barcode"].tolist()),
+        "matched_by_code": matched_by_code,
+        "matched_by_barcode": matched_by_barcode,
+        "new_count": len(preview) - matched_by_code - matched_by_barcode,
+    }
+
+    return preview, stats
 
 
 def upsert_details(
@@ -170,9 +222,14 @@ def upsert_details(
     df["Code"] = df.get("Supplier_Code", "").fillna("").astype(str)
     df["Description"] = df.get("TradeName", "").fillna("").astype(str).str.slice(0, MAX_DESC_LEN)
     df["Pharmacode"] = df.get("Pharmacode", "").fillna("").astype(str)
-    df["Cost"] = pd.to_numeric(df.get("Cost", 0), errors="coerce").fillna(0.0)
-    df["Retail"] = pd.to_numeric(df.get("Retail", 0), errors="coerce").fillna(0.0)
+    df["Cost"] = (pd.to_numeric(df.get("Cost", 0), errors="coerce").fillna(0.0) * 100).round().astype(int)
+    df["Retail"] = (pd.to_numeric(df.get("Retail", 0), errors="coerce").fillna(0.0) * 100).round().astype(int)
     df["Barcode"] = df.get("Barcode", "").fillna("").astype(str)
+    if "Outers" in df.columns:
+        df["Outers"] = pd.to_numeric(df["Outers"], errors="coerce").fillna(0).round().astype(int)
+        df["Outers"] = df["Outers"].where(df["Outers"] > 0, 1)
+    else:
+        df["Outers"] = 1
 
     now = datetime.now()
     updated_count = 0
@@ -180,20 +237,23 @@ def upsert_details(
 
     update_by_partcode_sql = """
         UPDATE Details
-        SET [Description] = ?, [Cost] = ?, [Retail] = ?, [Pharmacode] = ?, [Updated] = ?, [LastUpdated] = ?, [PartCodeGuid] = ?
+        SET [Description] = ?, [Cost] = ?, [Retail] = ?, [Pharmacode] = ?, [Outers] = ?,
+            [Updated] = ?, [LastUpdated] = ?, [LastChange] = ?, [PartCodeGuid] = ?
         WHERE SupplierID = ? AND Code = ?
     """
 
     update_by_barcode_sql = """
         UPDATE Details
-        SET [Description] = ?, [Cost] = ?, [Retail] = ?, [Pharmacode] = ?, [Updated] = ?, [LastUpdated] = ?, [PartCodeGuid] = ?
+        SET [Description] = ?, [Cost] = ?, [Retail] = ?, [Pharmacode] = ?, [Outers] = ?,
+            [Updated] = ?, [LastUpdated] = ?, [LastChange] = ?, [PartCodeGuid] = ?
         WHERE SupplierID = ? AND Barcode = ?
     """
 
     insert_sql = f"""
         INSERT INTO Details
-        ({guid_field}, SupplierID, Code, Description, Pharmacode, Cost, Retail, Barcode, Updated, LastUpdated)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ({guid_field}, SupplierID, Code, Description, Pharmacode, Cost, Retail, Barcode,
+         Outers, Updated, LastUpdated, DateCreated, LastChange, StockcardGuid)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
 
     with get_access_conn() as conn:
@@ -207,6 +267,7 @@ def upsert_details(
             pharmacode = r.Pharmacode
             cost = float(r.Cost)
             retail = float(r.Retail)
+            Outers = int(r.Outers)
 
             did_update = False
 
@@ -214,7 +275,7 @@ def upsert_details(
             if sup_code:
                 cur.execute(
                     update_by_partcode_sql,
-                    (desc, cost, retail, pharmacode, bool(mark_updated), now, new_guid(), supplier, sup_code),
+                    (desc, cost, retail, pharmacode, Outers, bool(mark_updated), now, now, new_guid(), supplier, sup_code),
                 )
                 if cur.rowcount > 0:
                     did_update = True
@@ -224,7 +285,7 @@ def upsert_details(
             if not did_update and barcode:
                 cur.execute(
                     update_by_barcode_sql,
-                    (desc, cost, retail, pharmacode, bool(mark_updated), now, new_guid(), supplier, barcode),
+                    (desc, cost, retail, pharmacode, Outers, bool(mark_updated), now, now, new_guid(), supplier, barcode),
                 )
                 if cur.rowcount > 0:
                     did_update = True
@@ -234,10 +295,63 @@ def upsert_details(
             if not did_update:
                 cur.execute(
                     insert_sql,
-                    (new_guid(), supplier, sup_code, desc, pharmacode, cost, retail, barcode, bool(mark_updated), now),
+                    (new_guid(), supplier, sup_code, desc, pharmacode, cost, retail, barcode,
+                     Outers, bool(mark_updated), now, now, now, new_guid()),
                 )
                 inserted_count += 1
 
         conn.commit()
 
     return updated_count, inserted_count
+
+
+def replace_all_details(
+    export_df: pd.DataFrame,
+    supplier_id: int,
+    mark_updated: bool = True,
+) -> int:
+    """
+    Delete ALL existing Details records for supplier_id, then insert export_df fresh.
+    Returns the number of rows inserted.
+    """
+    df = export_df.copy()
+    df["SupplierID"] = int(supplier_id)
+    df["Code"] = df.get("Supplier_Code", "").fillna("").astype(str)
+    df["Description"] = df.get("TradeName", "").fillna("").astype(str).str.slice(0, MAX_DESC_LEN)
+    df["Pharmacode"] = df.get("Pharmacode", "").fillna("").astype(str)
+    df["Cost"] = (pd.to_numeric(df.get("Cost", 0), errors="coerce").fillna(0.0) * 100).round().astype(int)
+    df["Retail"] = (pd.to_numeric(df.get("Retail", 0), errors="coerce").fillna(0.0) * 100).round().astype(int)
+    df["Barcode"] = df.get("Barcode", "").fillna("").astype(str)
+    if "Outers" in df.columns:
+        df["Outers"] = pd.to_numeric(df["Outers"], errors="coerce").fillna(0).round().astype(int)
+        df["Outers"] = df["Outers"].where(df["Outers"] > 0, 1)
+    else:
+        df["Outers"] = 1
+    now = datetime.now()
+
+    insert_sql = """
+        INSERT INTO Details
+            ([SupplierID], [Code], [Description], [Pharmacode], [Cost], [Retail],
+             [Barcode], [Outers], [Updated], [LastUpdated], [DateCreated], [LastChange],
+             [PartCodeGuid], [StockcardGuid])
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """
+
+    rows = [
+        (
+            int(r.SupplierID), r.Code, r.Description, r.Pharmacode,
+            float(r.Cost), float(r.Retail), r.Barcode, int(r.Outers),
+            bool(mark_updated), now, now, now, new_guid(), new_guid(),
+        )
+        for r in df[["SupplierID", "Code", "Description", "Pharmacode",
+                      "Cost", "Retail", "Barcode", "Outers"]].itertuples(index=False)
+    ]
+
+    with get_access_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM Details WHERE SupplierID = ?", (int(supplier_id),))
+        cur.fast_executemany = False
+        cur.executemany(insert_sql, rows)
+        conn.commit()
+
+    return len(rows)

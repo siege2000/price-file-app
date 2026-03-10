@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(venv/Scripts/python.exe -c \"import ast; ast.parse\\(open\\(''qt_app.py''\\).read\\(\\)\\); print\\(''Syntax OK''\\)\")",
+      "Bash(venv/Scripts/pip install:*)",
+      "Bash(venv/Scripts/python.exe -c \"from PyQt6.QtWidgets import QApplication; print\\(''PyQt6 OK''\\)\")",
+      "Bash(venv/Scripts/python.exe -c \"import ast; ast.parse\\(open\\(''qt_app.py''\\).read\\(\\)\\); print\\(''OK''\\)\")",
+      "Bash(python -m py_compile qt_app.py)",
+      "Bash(python -m py_compile access_helpers.py)",
+      "Bash(python -c \"from specials_widget import SpecialsWidget; print\\(''OK''\\)\")",
+      "Bash(python -c \":*)",
+      "Bash(venv/Scripts/python -c \":*)"
+    ]
+  }
+}

@@ -17,8 +17,9 @@ from helpers import (
     tpl_field_default,
     load_suppliers,
     clean_description,
-    save_to_details
-    
+    save_to_details,
+    build_upsert_preview,
+    upsert_details,
 )
 
 st.set_page_config(layout="wide")
@@ -298,19 +299,57 @@ if mode == "Price File":
             key=f"download_csv_{state_tag}"
         )
 
-        # ---- Save to Access
+        # ---- Upsert to Access (with preview)
         st.divider()
-        st.subheader("Save to Access (supplier.mdb)")
+        st.subheader("Upsert to Access (supplier.mdb)")
 
         mark_updated = st.checkbox("Mark rows as Updated", value=True, key=f"mark_updated_{state_tag}")
 
-        if st.button("Save these rows into Access → Details", type="primary", key=f"save_access_{state_tag}"):
-            try:
-                save_to_details(export_df, supplier_id, mark_updated=mark_updated)
-                st.success(f"Saved {len(export_df)} rows into Details for {supplier_label}")
-            except Exception as e:
-                st.error(f"Access save failed: {e}")
-                st.exception(e)
+        preview_key = f"upsert_preview_{state_tag}"
+
+        col_prev, col_exec = st.columns([1, 1])
+        with col_prev:
+            if st.button("Preview Changes", key=f"preview_upsert_{state_tag}"):
+                try:
+                    preview_df = build_upsert_preview(export_df, supplier_id)
+                    st.session_state[preview_key] = preview_df
+                except Exception as e:
+                    st.error(f"Preview failed: {e}")
+                    st.exception(e)
+
+        with col_exec:
+            if st.button("Execute Upsert", type="primary", key=f"exec_upsert_{state_tag}"):
+                try:
+                    updated, inserted = upsert_details(export_df, supplier_id, mark_updated=mark_updated)
+                    st.success(f"Done — {inserted} inserted, {updated} updated for {supplier_label}")
+                    # Clear preview so it refreshes on next preview click
+                    st.session_state.pop(preview_key, None)
+                except Exception as e:
+                    st.error(f"Upsert failed: {e}")
+                    st.exception(e)
+
+        if preview_key in st.session_state:
+            preview_df = st.session_state[preview_key]
+            new_count = (preview_df["Status"] == "NEW").sum()
+            upd_count = (preview_df["Status"] == "UPDATE").sum()
+            st.caption(f"{new_count} new  |  {upd_count} updates")
+
+            st.dataframe(
+                preview_df,
+                use_container_width=True,
+                height=400,
+                column_config={
+                    "Status": st.column_config.TextColumn("Status", width="small"),
+                    "Supplier_Code": st.column_config.TextColumn("Supplier Code", width="small"),
+                    "Barcode": st.column_config.TextColumn("Barcode", width="small"),
+                    "Old_Description": st.column_config.TextColumn("Old Description"),
+                    "New_Description": st.column_config.TextColumn("New Description"),
+                    "Old_Cost": st.column_config.NumberColumn("Old Cost", format="$%.2f"),
+                    "New_Cost": st.column_config.NumberColumn("New Cost", format="$%.2f"),
+                    "Old_Retail": st.column_config.NumberColumn("Old Retail", format="$%.2f"),
+                    "New_Retail": st.column_config.NumberColumn("New Retail", format="$%.2f"),
+                },
+            )
 
     except Exception as e:
         st.error(f"An error occurred: {e}")

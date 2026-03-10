@@ -19,6 +19,8 @@ from access_helpers import (
     new_guid,
     save_to_details,
     upsert_details,
+    load_supplier_details,
+    build_upsert_preview,
 )
 
 __all__ = [
@@ -43,4 +45,6 @@ __all__ = [
     "new_guid",
     "save_to_details",
     "upsert_details",
+    "load_supplier_details",
+    "build_upsert_preview",
 ]

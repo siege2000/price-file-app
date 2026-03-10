@@ -26,3 +26,8 @@ Thumbs.db
 # CSV exports / price file outputs (if generated)
 exports/
 output/
+
+# Bas Files
+*.bas
+*.frm
+*.frx

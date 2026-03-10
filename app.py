@@ -17,7 +17,8 @@ from helpers import (
     tpl_field_default,
     load_suppliers,
     clean_description,
-    save_to_details,   # <-- make sure this exists in helpers
+    save_to_details
+    
 )
 
 st.set_page_config(layout="wide")

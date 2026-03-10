@@ -19,10 +19,7 @@ Thumbs.db
 .vscode/
 
 # Databases / generated files
-*.sqlite
-*.db
-*.mdb
-*.accdb
+
 
 # CSV exports / price file outputs (if generated)
 exports/

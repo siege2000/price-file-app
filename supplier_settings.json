@@ -89,5 +89,101 @@
       "title_case": true,
       "normalize_units": true
     }
+  },
+  "561": {
+    "template": "Toniq",
+    "skip_rows": 3,
+    "columns": {
+      "plu": "(None)",
+      "pharmacode": "Unnamed: 2",
+      "retail": "(None)",
+      "cost": "Unnamed: 3",
+      "barcode": "(None)",
+      "sc": "(None)",
+      "outer": "(None)"
+    },
+    "description": {
+      "columns": [
+        "Vantage March 2026 Gold Monthly Price List "
+      ],
+      "prefix": "",
+      "separator": " ",
+      "title_case": true,
+      "normalize_units": true
+    }
+  },
+  "18": {
+    "template": "Toniq",
+    "skip_rows": 3,
+    "columns": {
+      "plu": "(None)",
+      "pharmacode": "Unnamed: 2",
+      "retail": "Unnamed: 3",
+      "cost": "Unnamed: 3",
+      "barcode": "(None)",
+      "sc": "Unnamed: 2",
+      "outer": "(None)"
+    },
+    "description": {
+      "columns": [
+        "Vantage March 2026 Gold Monthly Price List "
+      ],
+      "prefix": "",
+      "separator": " ",
+      "title_case": true,
+      "normalize_units": true
+    }
+  },
+  "104": {
+    "sheets": {
+      "Nutra-Life": {
+        "template": "Toniq",
+        "skip_rows": 6,
+        "columns": {
+          "plu": "(None)",
+          "pharmacode": "Unnamed: 4",
+          "retail": "Unnamed: 7",
+          "cost": "Unnamed: 6",
+          "barcode": "Unnamed: 5",
+          "sc": "Unnamed: 3",
+          "outer": "(None)"
+        },
+        "description": {
+          "columns": [
+            "VITACO HEALTH (NZ) LTD ORDER FORM EFFECTIVE FROM FEBRUARY 2026 UNTIL FURTHER NOTICE ",
+            "Unnamed: 1",
+            "Unnamed: 2"
+          ],
+          "prefix": "N/L",
+          "separator": " ",
+          "title_case": true,
+          "normalize_units": true
+        }
+      },
+      "Healtheries ": {
+        "template": "Toniq",
+        "skip_rows": 6,
+        "columns": {
+          "plu": "(None)",
+          "pharmacode": "Unnamed: 4",
+          "retail": "Unnamed: 7",
+          "cost": "Unnamed: 6",
+          "barcode": "Unnamed: 5",
+          "sc": "Unnamed: 3",
+          "outer": "(None)"
+        },
+        "description": {
+          "columns": [
+            "VITACO HEALTH (NZ) LTD ORDER FORM EFFECTIVE FROM FEBRUARY 2026 UNTIL FURTHER NOTICE",
+            "Unnamed: 1",
+            "Unnamed: 2"
+          ],
+          "prefix": "Hea",
+          "separator": " ",
+          "title_case": true,
+          "normalize_units": true
+        }
+      }
+    }
   }
 }

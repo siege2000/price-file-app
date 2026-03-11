@@ -710,5 +710,19 @@
       "from": "%.0",
       "to": ""
     }
+  ],
+  "104": [
+    {
+      "from": "One-A-Day",
+      "to": "1 A Day"
+    },
+    {
+      "from": "Tabs",
+      "to": "T's"
+    },
+    {
+      "from": "Multivitamin",
+      "to": "M/Vit"
+    }
   ]
 }

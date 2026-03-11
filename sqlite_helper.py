@@ -12,15 +12,17 @@ from datetime import datetime
 
 import pandas as pd
 
-MAX_DESC_LEN = 40
+import config
 
-SQLITE_FILE = "suppliers.sqlite"
+MAX_DESC_LEN = 40
 
 
 # ── Connection ────────────────────────────────────────────────────────────────
 
 def get_sqlite_conn() -> sqlite3.Connection:
-    db_path = os.path.join(os.getcwd(), SQLITE_FILE)
+    db_path = config.get_sqlite_path()
+    if not os.path.isabs(db_path):
+        db_path = os.path.join(os.getcwd(), db_path)
     conn = sqlite3.connect(db_path, detect_types=sqlite3.PARSE_DECLTYPES)
     conn.row_factory = sqlite3.Row
     return conn

@@ -886,6 +886,10 @@ class SpecialsWidget(QWidget):
         self._btn_save.setEnabled(True)
         self.status_message.emit(f"Saved {saved} row(s) to database.")
         QMessageBox.information(self, "Saved", f"{saved} row(s) saved successfully.")
+        # Clear the import grid after a successful save
+        self._model = _empty_model()
+        self._grid.setModel(self._model)
+        self._raw_file_df = None
 
     def _on_save_error(self, msg: str):
         self._btn_save.setEnabled(True)

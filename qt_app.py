@@ -34,6 +34,8 @@ from access_helpers import (
     MAX_DESC_LEN, load_suppliers, build_upsert_preview, upsert_details,
     replace_all_details,
 )
+import sqlite_helper
+import config
 from specials_widget import SpecialsWidget
 
 SUPPLIER_SETTINGS_FILE = "supplier_settings.json"
@@ -227,6 +229,46 @@ class ReplaceWorker(QThread):
             self.error.emit(str(e))
 
 
+class SqliteUpsertWorker(QThread):
+    done = pyqtSignal(int, int)   # (updated, inserted)
+    error = pyqtSignal(str)
+
+    def __init__(self, export_df: pd.DataFrame, supplier_id: int, mark_updated: bool):
+        super().__init__()
+        self.export_df = export_df
+        self.supplier_id = supplier_id
+        self.mark_updated = mark_updated
+
+    def run(self):
+        try:
+            updated, inserted = sqlite_helper.upsert_details(
+                self.export_df, self.supplier_id, mark_updated=self.mark_updated
+            )
+            self.done.emit(updated, inserted)
+        except Exception as e:
+            self.error.emit(str(e))
+
+
+class SqliteReplaceWorker(QThread):
+    done = pyqtSignal(int)   # rows inserted
+    error = pyqtSignal(str)
+
+    def __init__(self, export_df: pd.DataFrame, supplier_id: int, mark_updated: bool):
+        super().__init__()
+        self.export_df = export_df
+        self.supplier_id = supplier_id
+        self.mark_updated = mark_updated
+
+    def run(self):
+        try:
+            inserted = sqlite_helper.replace_all_details(
+                self.export_df, self.supplier_id, mark_updated=self.mark_updated
+            )
+            self.done.emit(inserted)
+        except Exception as e:
+            self.error.emit(str(e))
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 def load_file_by_path(path: str) -> pd.DataFrame:
     """Load CSV or Excel by file-system path (bypasses Streamlit file wrapper)."""
@@ -360,6 +402,8 @@ class PriceFileWidget(QWidget):
         self._upsert_worker: Optional[UpsertWorker] = None
         self._last_preview_stats: Optional[dict] = None
         self._replace_worker: Optional[ReplaceWorker] = None
+        self._sqlite_upsert_worker: Optional[SqliteUpsertWorker] = None
+        self._sqlite_replace_worker: Optional[SqliteReplaceWorker] = None
 
         self._build_ui()
         self._load_templates()
@@ -613,6 +657,29 @@ class PriceFileWidget(QWidget):
         action_bar.addWidget(self._btn_preview_upsert)
         action_bar.addWidget(self._btn_exec_upsert)
         action_bar.addWidget(self._btn_replace_all)
+
+        div2 = QFrame(); div2.setFrameShape(QFrame.Shape.VLine)
+        div2.setFrameShadow(QFrame.Shadow.Sunken)
+        action_bar.addWidget(div2)
+
+        self._btn_sqlite_upsert = QPushButton("Upsert → SQLite")
+        self._btn_sqlite_upsert.setToolTip(
+            "Upsert current rows into suppliers.sqlite (same logic as Access upsert)"
+        )
+        self._btn_sqlite_upsert.setStyleSheet(
+            "background-color: #198754; color: white; font-weight: bold; padding: 4px 12px;"
+        )
+        self._btn_sqlite_upsert.clicked.connect(self._exec_sqlite_upsert)
+        self._btn_sqlite_replace = QPushButton("Replace All → SQLite")
+        self._btn_sqlite_replace.setToolTip(
+            "DELETE all existing SQLite rows for this supplier, then INSERT current rows"
+        )
+        self._btn_sqlite_replace.setStyleSheet(
+            "background-color: #6f42c1; color: white; font-weight: bold; padding: 4px 12px;"
+        )
+        self._btn_sqlite_replace.clicked.connect(self._exec_sqlite_replace)
+        action_bar.addWidget(self._btn_sqlite_upsert)
+        action_bar.addWidget(self._btn_sqlite_replace)
         root.addLayout(action_bar)
 
         self._lbl_preview_info = QLabel("")
@@ -1303,10 +1370,24 @@ class PriceFileWidget(QWidget):
             QMessageBox.warning(self, "Upsert", "No supplier selected.")
             return
 
-        preview_df = self._preview_model.dataFrame()
+        preview_df = self._preview_model.dataFrame().copy()
         invalid_mask = preview_df.get("Chars", pd.Series([0] * len(preview_df))) > 40
-        invalid_rows = preview_df[invalid_mask].copy()
-        valid_rows = preview_df[~invalid_mask].copy()
+        fallback_mask = invalid_mask & preview_df.get("Status", "").eq("UPDATE")
+        skip_mask = invalid_mask & ~fallback_mask
+
+        if fallback_mask.any():
+            preview_df.loc[fallback_mask, "New_Description"] = (
+                preview_df.loc[fallback_mask, "Old_Description"].fillna("").astype(str)
+            )
+            preview_df.loc[fallback_mask, "Chars"] = (
+                preview_df.loc[fallback_mask, "New_Description"].str.len()
+            )
+            preview_df.loc[fallback_mask, "Valid"] = preview_df.loc[fallback_mask, "Chars"].apply(
+                lambda x: "✓" if x <= 40 else "⚠"
+            )
+
+        invalid_rows = preview_df[skip_mask].copy()
+        valid_rows = preview_df[~skip_mask].copy()
 
         if valid_rows.empty:
             QMessageBox.warning(
@@ -1317,6 +1398,12 @@ class PriceFileWidget(QWidget):
 
         supplier_label = self._cmb_supplier.currentText()
         skip_note = ""
+        fallback_note = ""
+        if fallback_mask.any():
+            fallback_note = (
+                f"\n\n{int(fallback_mask.sum())} update row(s) have descriptions > 40 chars "
+                f"and will keep their existing Access description."
+            )
         if not invalid_rows.empty:
             skip_note = (
                 f"\n\n{len(invalid_rows)} row(s) with descriptions > 40 chars "
@@ -1324,7 +1411,8 @@ class PriceFileWidget(QWidget):
             )
         if QMessageBox.question(
             self, "Confirm Upsert",
-            f"Upsert {len(valid_rows)} row(s) for:\n{supplier_label}{skip_note}\n\nContinue?",
+            f"Upsert {len(valid_rows)} row(s) for:\n{supplier_label}"
+            f"{fallback_note}{skip_note}\n\nContinue?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
         ) != QMessageBox.StandardButton.Yes:
             return
@@ -1473,6 +1561,93 @@ class PriceFileWidget(QWidget):
         self._btn_replace_all.setText("Replace All in Access")
         QMessageBox.critical(self, "Replace Error", msg)
 
+    # ─── SQLite upsert ────────────────────────────────────────────────────────
+    def _exec_sqlite_upsert(self):
+        supplier_id = self._get_supplier_id()
+        if supplier_id is None:
+            QMessageBox.warning(self, "SQLite Upsert", "Select a supplier first.")
+            return
+        export = self._get_export_df()
+        if export is None:
+            QMessageBox.warning(self, "SQLite Upsert", "Build output first.")
+            return
+        supplier_label = self._cmb_supplier.currentText()
+        if QMessageBox.question(
+            self, "Confirm SQLite Upsert",
+            f"Upsert {len(export)} row(s) into suppliers.sqlite for:\n{supplier_label}\n\nContinue?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        ) != QMessageBox.StandardButton.Yes:
+            return
+        self._btn_sqlite_upsert.setEnabled(False)
+        self._btn_sqlite_upsert.setText("Running…")
+        self._sqlite_upsert_worker = SqliteUpsertWorker(
+            export, supplier_id, self._chk_mark_updated.isChecked()
+        )
+        self._sqlite_upsert_worker.done.connect(self._on_sqlite_upsert_done)
+        self._sqlite_upsert_worker.error.connect(self._on_sqlite_upsert_error)
+        self._sqlite_upsert_worker.start()
+
+    def _on_sqlite_upsert_done(self, updated: int, inserted: int):
+        self._btn_sqlite_upsert.setEnabled(True)
+        self._btn_sqlite_upsert.setText("Upsert → SQLite")
+        supplier_label = self._cmb_supplier.currentText()
+        QMessageBox.information(
+            self, "SQLite Upsert Complete",
+            f"Done — {inserted} inserted, {updated} updated\nfor {supplier_label} in suppliers.sqlite",
+        )
+        self.status_message.emit(f"SQLite upsert done: {inserted} inserted, {updated} updated.")
+
+    def _on_sqlite_upsert_error(self, msg: str):
+        self._btn_sqlite_upsert.setEnabled(True)
+        self._btn_sqlite_upsert.setText("Upsert → SQLite")
+        QMessageBox.critical(self, "SQLite Upsert Error", msg)
+
+    # ─── SQLite replace all ───────────────────────────────────────────────────
+    def _exec_sqlite_replace(self):
+        supplier_id = self._get_supplier_id()
+        if supplier_id is None:
+            QMessageBox.warning(self, "SQLite Replace", "Select a supplier first.")
+            return
+        export = self._get_export_df()
+        if export is None:
+            QMessageBox.warning(self, "SQLite Replace", "Build output first.")
+            return
+        supplier_label = self._cmb_supplier.currentText()
+        if QMessageBox.warning(
+            self, "⚠ Replace All in SQLite — ARE YOU SURE?",
+            f"This will PERMANENTLY DELETE every existing SQLite record for:\n\n"
+            f"    {supplier_label}\n\n"
+            f"and replace them with {len(export)} row(s) from the current file.\n\n"
+            f"This CANNOT be undone. Continue?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        ) != QMessageBox.StandardButton.Yes:
+            return
+        self._btn_sqlite_replace.setEnabled(False)
+        self._btn_sqlite_replace.setText("Replacing…")
+        self._sqlite_replace_worker = SqliteReplaceWorker(
+            export, supplier_id, self._chk_mark_updated.isChecked()
+        )
+        self._sqlite_replace_worker.done.connect(self._on_sqlite_replace_done)
+        self._sqlite_replace_worker.error.connect(self._on_sqlite_replace_error)
+        self._sqlite_replace_worker.start()
+
+    def _on_sqlite_replace_done(self, inserted: int):
+        self._btn_sqlite_replace.setEnabled(True)
+        self._btn_sqlite_replace.setText("Replace All → SQLite")
+        supplier_label = self._cmb_supplier.currentText()
+        QMessageBox.information(
+            self, "SQLite Replace Complete",
+            f"Done — all previous records deleted and {inserted} row(s) inserted\n"
+            f"for {supplier_label} in suppliers.sqlite",
+        )
+        self.status_message.emit(f"SQLite replace complete: {inserted} rows for {supplier_label}.")
+
+    def _on_sqlite_replace_error(self, msg: str):
+        self._btn_sqlite_replace.setEnabled(True)
+        self._btn_sqlite_replace.setText("Replace All → SQLite")
+        QMessageBox.critical(self, "SQLite Replace Error", msg)
+
     # ─── Diagnostics ──────────────────────────────────────────────────────────
     def _show_diagnostics(self):
         stats = self._last_preview_stats
@@ -1529,6 +1704,74 @@ class PriceFileWidget(QWidget):
 
 
 # ── Main window ───────────────────────────────────────────────────────────────
+class SettingsDialog(QDialog):
+    """Dialog for editing settings.ini paths and Access password."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Settings")
+        self.setMinimumWidth(520)
+
+        layout = QGridLayout(self)
+        layout.setSpacing(8)
+        layout.setContentsMargins(12, 12, 12, 12)
+
+        # Access MDB path
+        layout.addWidget(QLabel("Access database (.mdb):"), 0, 0)
+        self._mdb_edit = QLineEdit(config.get_mdb_path())
+        layout.addWidget(self._mdb_edit, 0, 1)
+        btn_mdb = QPushButton("Browse…")
+        btn_mdb.clicked.connect(self._browse_mdb)
+        layout.addWidget(btn_mdb, 0, 2)
+
+        # Access password
+        layout.addWidget(QLabel("Access password:"), 1, 0)
+        self._pwd_edit = QLineEdit(config.get_access_password())
+        self._pwd_edit.setEchoMode(QLineEdit.EchoMode.Password)
+        layout.addWidget(self._pwd_edit, 1, 1, 1, 2)
+
+        # SQLite path
+        layout.addWidget(QLabel("SQLite database (.sqlite):"), 2, 0)
+        self._sqlite_edit = QLineEdit(config.get_sqlite_path())
+        layout.addWidget(self._sqlite_edit, 2, 1)
+        btn_sqlite = QPushButton("Browse…")
+        btn_sqlite.clicked.connect(self._browse_sqlite)
+        layout.addWidget(btn_sqlite, 2, 2)
+
+        # OK / Cancel
+        btn_row = QHBoxLayout()
+        btn_row.addStretch()
+        btn_ok = QPushButton("OK")
+        btn_ok.setDefault(True)
+        btn_ok.clicked.connect(self._save_and_accept)
+        btn_cancel = QPushButton("Cancel")
+        btn_cancel.clicked.connect(self.reject)
+        btn_row.addWidget(btn_ok)
+        btn_row.addWidget(btn_cancel)
+        layout.addLayout(btn_row, 3, 0, 1, 3)
+
+    def _browse_mdb(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Select Access Database", "", "Access Database (*.mdb *.accdb)"
+        )
+        if path:
+            self._mdb_edit.setText(path)
+
+    def _browse_sqlite(self):
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Select SQLite Database", "", "SQLite Database (*.sqlite *.db)",
+            options=QFileDialog.Option.DontConfirmOverwrite,
+        )
+        if path:
+            self._sqlite_edit.setText(path)
+
+    def _save_and_accept(self):
+        config.set_mdb_path(self._mdb_edit.text().strip())
+        config.set_access_password(self._pwd_edit.text())
+        config.set_sqlite_path(self._sqlite_edit.text().strip())
+        self.accept()
+
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -1553,6 +1796,9 @@ class MainWindow(QMainWindow):
         mode_row.addWidget(rb_price)
         mode_row.addWidget(rb_specials)
         mode_row.addStretch()
+        btn_settings = QPushButton("Settings…")
+        btn_settings.clicked.connect(self._open_settings)
+        mode_row.addWidget(btn_settings)
         root.addLayout(mode_row)
 
         self._stack = QStackedWidget()
@@ -1570,6 +1816,10 @@ class MainWindow(QMainWindow):
 
     def _on_mode_changed(self, idx: int):
         self._stack.setCurrentIndex(idx)
+
+    def _open_settings(self):
+        dlg = SettingsDialog(self)
+        dlg.exec()
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────

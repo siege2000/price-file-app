@@ -22,6 +22,7 @@ Thumbs.db
 *.mdb
 *.ldb
 *.xlsx
+*.sqlite
 
 # CSV exports / price file outputs (if generated)
 exports/

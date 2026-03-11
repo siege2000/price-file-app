@@ -5,18 +5,20 @@ from datetime import datetime
 import pandas as pd
 import pyodbc
 
-MAX_DESC_LEN = 40
+import config
 
-ACCESS_PASSWORD = "LOCKIE MONDAY"
-ACCESS_FILE = "suppliers.mdb"
+MAX_DESC_LEN = 40
 
 
 def get_access_conn():
-    db_path = os.path.join(os.getcwd(), ACCESS_FILE)
+    mdb_path = config.get_mdb_path()
+    if not os.path.isabs(mdb_path):
+        mdb_path = os.path.join(os.getcwd(), mdb_path)
+    password = config.get_access_password()
     conn_str = (
         r"DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};"
-        rf"DBQ={db_path};"
-        rf"PWD={ACCESS_PASSWORD};"
+        rf"DBQ={mdb_path};"
+        rf"PWD={password};"
     )
     return pyodbc.connect(conn_str)
 
@@ -300,6 +302,10 @@ def upsert_details(
                 )
                 inserted_count += 1
 
+        cur.execute(
+            "UPDATE Suppliers SET LastUpdated = ? WHERE SupplierID = ?",
+            (now, int(supplier_id)),
+        )
         conn.commit()
 
     return updated_count, inserted_count
@@ -352,6 +358,10 @@ def replace_all_details(
         cur.execute("DELETE FROM Details WHERE SupplierID = ?", (int(supplier_id),))
         cur.fast_executemany = False
         cur.executemany(insert_sql, rows)
+        cur.execute(
+            "UPDATE Suppliers SET LastUpdated = ? WHERE SupplierID = ?",
+            (now, int(supplier_id)),
+        )
         conn.commit()
 
     return len(rows)

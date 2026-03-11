@@ -11,6 +11,7 @@ MAX_DESC_LEN = 40
 
 
 def get_access_conn():
+    """Open and return a pyodbc connection to the Access MDB using settings from config."""
     mdb_path = config.get_mdb_path()
     if not os.path.isabs(mdb_path):
         mdb_path = os.path.join(os.getcwd(), mdb_path)
@@ -24,6 +25,7 @@ def get_access_conn():
 
 
 def load_suppliers():
+    """Load all suppliers (ID, Name, Code) from the Access Suppliers table."""
     with get_access_conn() as conn:
         sql = """
         SELECT SupplierID, SupplierName, SupplierCode
@@ -34,10 +36,12 @@ def load_suppliers():
 
 
 def new_guid():
+    """Generate a new uppercase hex GUID string."""
     return uuid.uuid4().hex.upper()
 
 
 def save_to_details(export_df: pd.DataFrame, supplier_id: int, mark_updated: bool = True):
+    """Insert all rows from export_df into the Access Details table for the given supplier."""
     df = export_df.copy()
 
     df["SupplierID"] = int(supplier_id)
@@ -181,8 +185,8 @@ def build_upsert_preview(
     preview["_sort"] = preview["Status"].map({"NEW": 0, "UPDATE": 1})
     preview = preview.sort_values("_sort").drop(columns=["_sort"]).reset_index(drop=True)
 
-    # Sample values for diagnostics (up to 8 each)
     def _sample(values):
+        """Collect up to 8 unique non-empty values for diagnostic display."""
         seen = []
         for v in values:
             if v and v not in seen:

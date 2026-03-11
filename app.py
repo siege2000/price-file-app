@@ -193,10 +193,6 @@ if mode == "Price File":
                         del st.session_state[k]
                 st.rerun()
 
-        # Required mapping
-        if retail_col == "(None)" or cost_col == "(None)":
-            st.warning("Please map at least Retail and Cost to generate the export file.")
-            st.stop()
 
         # ---- Build output
        # ---- Build output
@@ -205,8 +201,8 @@ if mode == "Price File":
         out["PLU"] = safe_str(df[plu_col]) if plu_col != "(None)" else ""
         out["Supplier_Code"] = safe_str(df[supplier_code_col]) if supplier_code_col != "(None)" else ""
         out["Pharmacode"] = safe_str(df[pharmacode_col]) if pharmacode_col != "(None)" else ""
-        out["Retail"] = parse_money(df[retail_col]).round(decimals)
-        out["Cost"] = parse_money(df[cost_col]).round(decimals)
+        out["Retail"] = parse_money(df[retail_col]).round(decimals) if retail_col != "(None)" else 0.0
+        out["Cost"] = parse_money(df[cost_col]).round(decimals) if cost_col != "(None)" else 0.0
 
         trade = combine_columns(df, desc_cols, sep=desc_sep) if desc_cols else pd.Series([""] * len(df), index=df.index)
         trade = clean_description(trade)
@@ -311,7 +307,7 @@ if mode == "Price File":
         with col_prev:
             if st.button("Preview Changes", key=f"preview_upsert_{state_tag}"):
                 try:
-                    preview_df = build_upsert_preview(export_df, supplier_id)
+                    preview_df, _ = build_upsert_preview(export_df, supplier_id)
                     st.session_state[preview_key] = preview_df
                 except Exception as e:
                     st.error(f"Preview failed: {e}")

@@ -6,6 +6,7 @@ from column_helpers import safe_str
 
 
 def combine_columns(df: pd.DataFrame, columns: List[str], sep: str = " ") -> pd.Series:
+    """Join multiple DataFrame columns into a single string series, separated by sep."""
     if not columns:
         return pd.Series([""] * len(df), index=df.index)
 
@@ -31,6 +32,7 @@ def normalize_units(tradename: pd.Series) -> pd.Series:
 
 
 def clean_description(series: pd.Series) -> pd.Series:
+    """Strip trademark symbols and non-standard characters from a description series."""
     s = series.astype("string").fillna("")
     s = s.str.replace(r"[™®©]", "", regex=True)
     s = s.str.replace(r"[^\w\s\-\.,%/()]", "", regex=True)
@@ -39,4 +41,5 @@ def clean_description(series: pd.Series) -> pd.Series:
 
 
 def desc_len(series) -> pd.Series:
+    """Return the character length of each entry in a string series."""
     return safe_str(series).str.len()

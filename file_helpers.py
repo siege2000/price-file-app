@@ -6,6 +6,7 @@ import pandas as pd
 
 
 def load_file(file) -> pd.DataFrame:
+    """Load a CSV or Excel file into a DataFrame, raising ValueError for unsupported types."""
     name = file.name.lower()
     if name.endswith(".csv"):
         return pd.read_csv(file)
@@ -15,6 +16,7 @@ def load_file(file) -> pd.DataFrame:
 
 
 def load_templates(path: str = "templates.json") -> Dict[str, Any]:
+    """Load the templates dictionary from a JSON file, raising errors if missing or malformed."""
     p = Path(path)
     if not p.exists():
         raise FileNotFoundError(f"Template file not found: {path}")

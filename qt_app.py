@@ -113,6 +113,11 @@ class PandasModel(QAbstractTableModel):
     def dataFrame(self) -> pd.DataFrame:
         return self._df.copy()
 
+    def remove_rows(self, row_indices: list[int]):
+        """Remove rows by integer position and notify views."""
+        self._df = self._df.drop(self._df.index[row_indices]).reset_index(drop=True)
+        self.layoutChanged.emit()
+
 
 class EditablePandasModel(PandasModel):
     """PandasModel that allows editing specific columns."""
@@ -270,14 +275,22 @@ class SqliteReplaceWorker(QThread):
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
-def load_file_by_path(path: str) -> pd.DataFrame:
-    """Load CSV or Excel by file-system path (bypasses Streamlit file wrapper)."""
+def load_file_by_path(path: str, sheet_name: Optional[str] = None) -> pd.DataFrame:
+    """Load CSV or Excel by file-system path. Pass sheet_name to select a specific Excel sheet."""
     p = path.lower()
     if p.endswith(".csv"):
         return pd.read_csv(path)
     if p.endswith(".xlsx") or p.endswith(".xls"):
-        return pd.read_excel(path)
+        return pd.read_excel(path, sheet_name=sheet_name)
     raise ValueError("Unsupported file type — must be .csv or .xlsx")
+
+
+def get_excel_sheets(path: str) -> list[str]:
+    """Return the list of sheet names for an Excel workbook."""
+    try:
+        return pd.ExcelFile(path).sheet_names
+    except Exception:
+        return []
 
 
 def make_table_view() -> QTableView:
@@ -288,6 +301,31 @@ def make_table_view() -> QTableView:
     v.verticalHeader().setDefaultSectionSize(22)
     v.setAlternatingRowColors(True)
     return v
+
+
+class DeletableTableView(QTableView):
+    """Preview table that removes selected rows when the Delete key is pressed."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
+        self.horizontalHeader().setStretchLastSection(True)
+        self.verticalHeader().setDefaultSectionSize(22)
+        self.setAlternatingRowColors(True)
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key.Key_Delete:
+            model = self.model()
+            if model is not None and hasattr(model, "remove_rows"):
+                rows = sorted(
+                    {idx.row() for idx in self.selectedIndexes()},
+                    reverse=True,
+                )
+                if rows:
+                    model.remove_rows(rows)
+        else:
+            super().keyPressEvent(event)
 
 
 # ── Supplier Rules dialog ─────────────────────────────────────────────────────
@@ -384,6 +422,45 @@ class SupplierRulesDialog(QDialog):
         return self._accepted_rules
 
 
+# ── Sheet Picker dialog ───────────────────────────────────────────────────────
+class SheetPickerDialog(QDialog):
+    """Prompt the user to select an Excel sheet when a workbook has multiple sheets."""
+
+    def __init__(self, sheet_names: list[str], parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Select Excel Sheet")
+        self.resize(340, 160)
+        self._selected: Optional[str] = None
+
+        layout = QVBoxLayout(self)
+        layout.setSpacing(8)
+        layout.addWidget(QLabel("This workbook has multiple sheets.\nSelect the sheet to load:"))
+
+        self._cmb = QComboBox()
+        self._cmb.addItems(sheet_names)
+        layout.addWidget(self._cmb)
+
+        btns = QHBoxLayout()
+        btn_ok = QPushButton("Load Sheet")
+        btn_ok.setStyleSheet(
+            "background-color: #0d6efd; color: white; font-weight: bold; padding: 4px 14px;"
+        )
+        btn_ok.clicked.connect(self._on_ok)
+        btn_cancel = QPushButton("Cancel")
+        btn_cancel.clicked.connect(self.reject)
+        btns.addStretch()
+        btns.addWidget(btn_cancel)
+        btns.addWidget(btn_ok)
+        layout.addLayout(btns)
+
+    def _on_ok(self):
+        self._selected = self._cmb.currentText()
+        self.accept()
+
+    def selected_sheet(self) -> Optional[str]:
+        return self._selected
+
+
 # ── Price File widget ─────────────────────────────────────────────────────────
 class PriceFileWidget(QWidget):
     status_message = pyqtSignal(str)
@@ -404,6 +481,8 @@ class PriceFileWidget(QWidget):
         self._replace_worker: Optional[ReplaceWorker] = None
         self._sqlite_upsert_worker: Optional[SqliteUpsertWorker] = None
         self._sqlite_replace_worker: Optional[SqliteReplaceWorker] = None
+        self._current_sheet: Optional[str] = None
+        self._excel_sheets: list[str] = []
 
         self._build_ui()
         self._load_templates()
@@ -471,6 +550,9 @@ class PriceFileWidget(QWidget):
         self._chk_blank_plu = QCheckBox("Allow blank PLU")
         self._chk_blank_plu.setChecked(True)
         exp_form.addWidget(self._chk_blank_plu, 2, 0, 1, 2)
+        self._chk_excl_no_id = QCheckBox("Exclude rows with no Barcode, Supplier Code and Pharmacode")
+        self._chk_excl_no_id.setChecked(True)
+        exp_form.addWidget(self._chk_excl_no_id, 3, 0, 1, 2)
         left_v.addWidget(exp_grp)
 
         # Rules group
@@ -512,6 +594,18 @@ class PriceFileWidget(QWidget):
         self._cmb_supplier = QComboBox()
         self._cmb_supplier.currentIndexChanged.connect(self._on_supplier_changed)
         sup_v.addWidget(self._cmb_supplier)
+        # Sheet layout selector — shown only when this supplier has >1 saved sheet layout
+        sheet_cfg_row = QHBoxLayout()
+        self._lbl_sheet_config = QLabel("Sheet layout:")
+        sheet_cfg_row.addWidget(self._lbl_sheet_config)
+        self._cmb_sheet_config = QComboBox()
+        self._cmb_sheet_config.setMinimumWidth(130)
+        self._cmb_sheet_config.currentIndexChanged.connect(self._on_sheet_config_changed)
+        sheet_cfg_row.addWidget(self._cmb_sheet_config)
+        sheet_cfg_row.addStretch()
+        sup_v.addLayout(sheet_cfg_row)
+        self._lbl_sheet_config.setVisible(False)
+        self._cmb_sheet_config.setVisible(False)
         rules_row = QHBoxLayout()
         self._lbl_supplier_rules = QLabel("")
         self._lbl_supplier_rules.setStyleSheet("font-size: 11px; color: #6c757d; padding: 1px 2px;")
@@ -700,7 +794,7 @@ class PriceFileWidget(QWidget):
         sort_bar.addWidget(self._btn_diagnostics)
         root.addLayout(sort_bar)
 
-        self._preview_table = make_table_view()
+        self._preview_table = DeletableTableView()
         root.addWidget(self._preview_table, 2)
 
     # ─── Template + supplier loading ──────────────────────────────────────────
@@ -736,10 +830,23 @@ class PriceFileWidget(QWidget):
         path, _ = QFileDialog.getOpenFileName(
             self, "Open Price File", "", "CSV / Excel (*.csv *.xlsx *.xls)"
         )
-        if path:
-            self._file_path = path
-            self._lbl_file.setText(Path(path).name)
-            self._reload_data()
+        if not path:
+            return
+        self._file_path = path
+        self._current_sheet = None
+        self._excel_sheets = []
+        # Detect sheets for Excel files
+        if path.lower().endswith((".xlsx", ".xls")):
+            sheets = get_excel_sheets(path)
+            if len(sheets) > 1:
+                dlg = SheetPickerDialog(sheets, self)
+                if dlg.exec() != QDialog.DialogCode.Accepted:
+                    self._file_path = None
+                    return
+                self._current_sheet = dlg.selected_sheet()
+            self._excel_sheets = sheets
+        self._lbl_file.setText(Path(path).name)
+        self._reload_data()
 
     def _on_skip_changed(self):
         if self._file_path:
@@ -751,7 +858,7 @@ class PriceFileWidget(QWidget):
 
     def _reload_data(self):
         try:
-            df = load_file_by_path(self._file_path)
+            df = load_file_by_path(self._file_path, sheet_name=self._current_sheet)
             skip = self._spin_skip.value()
             if skip > 0:
                 df = df.iloc[skip:].reset_index(drop=True)
@@ -949,9 +1056,6 @@ class PriceFileWidget(QWidget):
             return
         retail_col = self._col_combos["retail"].currentText()
         cost_col = self._col_combos["cost"].currentText()
-        if retail_col == "(None)" or cost_col == "(None)":
-            QMessageBox.warning(self, "Build Output", "Map at least Retail and Cost first.")
-            return
         try:
             df = self._df
             decimals = int(self._cmb_decimals.currentText())
@@ -963,8 +1067,8 @@ class PriceFileWidget(QWidget):
             out["PLU"] = safe_str(df[col("plu")]) if col("plu") != "(None)" else ""
             out["Supplier_Code"] = safe_str(df[col("sc")]) if col("sc") != "(None)" else ""
             out["Pharmacode"] = safe_str(df[col("pharmacode")]) if col("pharmacode") != "(None)" else ""
-            out["Retail"] = parse_money(df[retail_col]).round(decimals)
-            out["Cost"] = parse_money(df[cost_col]).round(decimals)
+            out["Retail"] = parse_money(df[retail_col]).round(decimals) if retail_col != "(None)" else 0.0
+            out["Cost"] = parse_money(df[cost_col]).round(decimals) if cost_col != "(None)" else 0.0
 
             desc_cols = [
                 self._lst_desc_cols.item(i).text()
@@ -1016,6 +1120,20 @@ class PriceFileWidget(QWidget):
                     out[~non_blank],
                     out[non_blank].drop_duplicates(subset=["PLU"], keep="last"),
                 ]).sort_index()
+
+            # Exclude rows where barcode, supplier code AND pharmacode are all blank
+            if self._chk_excl_no_id.isChecked():
+                has_id = (
+                    out["Barcode"].astype(str).str.strip().ne("") |
+                    out["Supplier_Code"].astype(str).str.strip().ne("") |
+                    out["Pharmacode"].astype(str).str.strip().ne("")
+                )
+                excluded = (~has_id).sum()
+                out = out[has_id]
+                if excluded:
+                    self.status_message.emit(
+                        f"Excluded {excluded} row(s) with no Barcode, Supplier Code or Pharmacode."
+                    )
 
             self._export_df = out.reset_index(drop=True)
             self._preview_model = None
@@ -1130,7 +1248,8 @@ class PriceFileWidget(QWidget):
         supplier_id = self._get_supplier_id()
         if supplier_id is None:
             return
-        settings = {
+        sheet_key = self._get_sheet_key()
+        sheet_settings = {
             "template": self._cmb_template.currentText(),
             "skip_rows": self._spin_skip.value(),
             "columns": {key: cb.currentText() for key, cb in self._col_combos.items()},
@@ -1147,20 +1266,49 @@ class PriceFileWidget(QWidget):
             },
         }
         all_s = self._read_all_supplier_settings()
-        all_s[str(supplier_id)] = settings
+        sup_key = str(supplier_id)
+        entry = all_s.get(sup_key, {})
+        # Migrate old flat format to sheet-keyed format on first save
+        if "sheets" not in entry and ("template" in entry or "columns" in entry):
+            entry = {"sheets": {"_default": entry}}
+        if "sheets" not in entry:
+            entry = {"sheets": {}}
+        sheets = entry["sheets"]
+        sheets[sheet_key] = sheet_settings
+        # Enforce max 6 sheet layouts (drop oldest if exceeded)
+        if len(sheets) > 6:
+            del sheets[next(iter(sheets))]
+        entry["sheets"] = sheets
+        all_s[sup_key] = entry
         try:
             Path(SUPPLIER_SETTINGS_FILE).write_text(
                 json.dumps(all_s, indent=2, ensure_ascii=False), encoding="utf-8"
             )
             self.status_message.emit(
-                f"Settings saved for {self._cmb_supplier.currentText()}"
+                f"Settings saved for {self._cmb_supplier.currentText()} [{sheet_key}]"
             )
+            self._update_sheet_combo(sheets)
         except Exception as e:
             QMessageBox.warning(self, "Settings", f"Could not save supplier settings:\n{e}")
 
     def _apply_supplier_settings(self, supplier_id: int):
-        """Apply saved supplier settings to the UI, skipping missing columns."""
-        settings = self._read_all_supplier_settings().get(str(supplier_id))
+        """Apply saved supplier settings for the current sheet key to the UI."""
+        all_s = self._read_all_supplier_settings()
+        entry = all_s.get(str(supplier_id))
+        if not entry:
+            self._update_sheet_combo({})
+            self._update_desc_preview()
+            return
+
+        # Migrate old flat format to sheet-keyed format on read
+        if "sheets" not in entry and ("template" in entry or "columns" in entry):
+            entry = {"sheets": {"_default": entry}}
+        sheets = entry.get("sheets", {})
+        self._update_sheet_combo(sheets)
+
+        # Pick settings for current sheet key, fall back to first available
+        sheet_key = self._get_sheet_key()
+        settings = sheets.get(sheet_key) or next(iter(sheets.values()), None)
         if not settings:
             self._update_desc_preview()
             return
@@ -1229,6 +1377,40 @@ class PriceFileWidget(QWidget):
         supplier_id = self._get_supplier_id()
         if supplier_id is not None:
             self._apply_supplier_settings(supplier_id)
+
+    def _get_sheet_key(self) -> str:
+        """Return the settings key for the currently active sheet (or '_default')."""
+        return self._current_sheet or "_default"
+
+    def _update_sheet_combo(self, sheets: dict):
+        """Populate and show/hide the sheet layout combo based on saved sheet layouts."""
+        self._cmb_sheet_config.blockSignals(True)
+        self._cmb_sheet_config.clear()
+        for sheet_key in sheets:
+            label = sheet_key if sheet_key != "_default" else "(default)"
+            self._cmb_sheet_config.addItem(label, userData=sheet_key)
+        # Select current sheet in the combo
+        current_key = self._get_sheet_key()
+        for i in range(self._cmb_sheet_config.count()):
+            if self._cmb_sheet_config.itemData(i) == current_key:
+                self._cmb_sheet_config.setCurrentIndex(i)
+                break
+        visible = self._cmb_sheet_config.count() > 1
+        self._lbl_sheet_config.setVisible(visible)
+        self._cmb_sheet_config.setVisible(visible)
+        self._cmb_sheet_config.blockSignals(False)
+
+    def _on_sheet_config_changed(self, index: int):
+        """User selected a different saved sheet layout — apply its stored settings."""
+        if index < 0:
+            return
+        sheet_key = self._cmb_sheet_config.itemData(index)
+        if sheet_key:
+            self._current_sheet = None if sheet_key == "_default" else sheet_key
+        supplier_id = self._get_supplier_id()
+        if supplier_id is not None:
+            self._apply_supplier_settings(supplier_id)
+
 
     def _show_preview(self, df: pd.DataFrame):
         self._preview_model = EditablePandasModel(
@@ -1472,6 +1654,8 @@ class PriceFileWidget(QWidget):
                 return
 
         self._file_path = None
+        self._current_sheet = None
+        self._excel_sheets = []
         self._df = None
         self._export_df = None
         self._preview_model = None
@@ -1479,6 +1663,11 @@ class PriceFileWidget(QWidget):
         self._last_preview_stats = None
 
         self._lbl_file.setText("No file loaded")
+        self._cmb_sheet_config.blockSignals(True)
+        self._cmb_sheet_config.clear()
+        self._cmb_sheet_config.blockSignals(False)
+        self._lbl_sheet_config.setVisible(False)
+        self._cmb_sheet_config.setVisible(False)
         self._spin_skip.blockSignals(True)
         self._spin_skip.setValue(0)
         self._spin_skip.blockSignals(False)

@@ -6,6 +6,7 @@ import pandas as pd
 
 
 def parse_money(series) -> pd.Series:
+    """Parse a series of price strings into numeric values, handling currency symbols and EU comma decimals."""
     s = pd.Series(series).astype("string").fillna("")
     s = s.str.replace(r"[^\d,.\-]", "", regex=True)
 
@@ -25,6 +26,7 @@ def parse_money(series) -> pd.Series:
 
 
 def load_replacements_csv(file) -> pd.DataFrame:
+    """Load a replacement rules CSV with 'from' and 'to' columns, validating required headers."""
     rules = pd.read_csv(file)
     rules.columns = [c.strip().lower() for c in rules.columns]
     if "from" not in rules.columns or "to" not in rules.columns:
@@ -43,9 +45,8 @@ def apply_replacements(
     case_insensitive: bool = True,
 ) -> Tuple[pd.Series, int]:
     """
-    Supports:
-      - Literal rules: from="Nexcare", to="N/C"
-      - Regex rules:   from="regex:(...pattern...)", to="...replacement..."
+    Apply find-and-replace rules to a description series. Returns the modified series and total replacement count.
+    Supports literal rules and regex rules (prefix 'from' value with 'regex:').
     """
     s = pd.Series(description_series).astype("string").fillna("")
     flags = re.IGNORECASE if case_insensitive else 0

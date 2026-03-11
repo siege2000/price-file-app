@@ -4,10 +4,12 @@ import pandas as pd
 
 
 def safe_str(series) -> pd.Series:
+    """Convert a series to stripped strings, replacing NaN with empty string."""
     return pd.Series(series).astype("string").fillna("").str.strip()
 
 
 def idx_for(cols_with_none: List[str], colname: Optional[str]) -> int:
+    """Return the index of colname in cols_with_none, or 0 if not found."""
     if not colname:
         return 0
     try:

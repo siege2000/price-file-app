@@ -281,7 +281,7 @@ def load_file_by_path(path: str, sheet_name: Optional[str] = None) -> pd.DataFra
     if p.endswith(".csv"):
         return pd.read_csv(path)
     if p.endswith(".xlsx") or p.endswith(".xls"):
-        return pd.read_excel(path, sheet_name=sheet_name)
+        return pd.read_excel(path, sheet_name=sheet_name if sheet_name is not None else 0)
     raise ValueError("Unsupported file type — must be .csv or .xlsx")
 
 

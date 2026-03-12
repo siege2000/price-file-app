@@ -221,18 +221,24 @@ class PreviewWorker(QThread):
 
 class UpsertWorker(QThread):
     done = pyqtSignal(int, int)
+    progress = pyqtSignal(int, int)   # (rows_done, total)
     error = pyqtSignal(str)
 
-    def __init__(self, export_df: pd.DataFrame, supplier_id: int, mark_updated: bool):
+    def __init__(self, export_df: pd.DataFrame, supplier_id: int, mark_updated: bool,
+                 existing_df=None):
         super().__init__()
         self.export_df = export_df
         self.supplier_id = supplier_id
         self.mark_updated = mark_updated
+        self.existing_df = existing_df
 
     def run(self):
         try:
             updated, inserted = upsert_details(
-                self.export_df, self.supplier_id, mark_updated=self.mark_updated
+                self.export_df, self.supplier_id,
+                mark_updated=self.mark_updated,
+                existing_df=self.existing_df,
+                progress_callback=lambda done, total: self.progress.emit(done, total),
             )
             self.done.emit(inserted, updated)
         except Exception as e:
@@ -1680,13 +1686,24 @@ class PriceFileWidget(QWidget):
         self._upsert_skipped_rows = invalid_rows if not invalid_rows.empty else None
         export = self._preview_to_export_df(valid_rows)
         self._btn_exec_upsert.setEnabled(False)
-        self._btn_exec_upsert.setText("Running…")
+        self._btn_exec_upsert.setText("Starting…")
+        cached = (
+            self._prefetched_details
+            if self._prefetch_supplier_id == supplier_id and self._prefetched_details is not None
+            else None
+        )
         self._upsert_worker = UpsertWorker(
             export, supplier_id, self._chk_mark_updated.isChecked(),
+            existing_df=cached,
         )
+        self._upsert_worker.progress.connect(self._on_upsert_progress)
         self._upsert_worker.done.connect(self._on_upsert_done)
         self._upsert_worker.error.connect(self._on_upsert_error)
         self._upsert_worker.start()
+
+    def _on_upsert_progress(self, done: int, total: int):
+        remaining = total - done
+        self._btn_exec_upsert.setText(f"{remaining} rows remaining…")
 
     def _on_upsert_done(self, inserted: int, updated: int):
         self._btn_exec_upsert.setEnabled(True)

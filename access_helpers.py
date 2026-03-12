@@ -278,14 +278,18 @@ def upsert_details(
     mark_updated: bool = True,
     guid_field: str = "PartCodeGuid",
     existing_df: pd.DataFrame | None = None,
+    progress_callback=None,
+    chunk_size: int = 50,
 ) -> tuple[int, int]:
     """
     Upsert into Access Details table.
 
     Fetches existing records once (or uses existing_df if pre-fetched), classifies
     each row as an update-by-code, update-by-barcode, or insert, then executes all
-    three groups as batched executemany calls — reducing N round trips to 3.
+    three groups as chunked executemany calls — reducing N round trips to 3 batches.
     Match order: SupplierID + Code first, then SupplierID + Barcode fallback.
+
+    progress_callback(rows_done, total) is called after each chunk if provided.
     """
     df = export_df.copy()
     df["SupplierID"] = int(supplier_id)
@@ -364,15 +368,23 @@ def upsert_details(
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
 
+    total = len(update_code_rows) + len(update_barcode_rows) + len(insert_rows)
+    done = 0
+
+    def _run_chunks(cur, sql, rows):
+        nonlocal done
+        for i in range(0, len(rows), chunk_size):
+            cur.executemany(sql, rows[i : i + chunk_size])
+            done += len(rows[i : i + chunk_size])
+            if progress_callback:
+                progress_callback(done, total)
+
     with get_access_conn() as conn:
         cur = conn.cursor()
         cur.fast_executemany = False
-        if update_code_rows:
-            cur.executemany(update_by_partcode_sql, update_code_rows)
-        if update_barcode_rows:
-            cur.executemany(update_by_barcode_sql, update_barcode_rows)
-        if insert_rows:
-            cur.executemany(insert_sql, insert_rows)
+        _run_chunks(cur, update_by_partcode_sql, update_code_rows)
+        _run_chunks(cur, update_by_barcode_sql, update_barcode_rows)
+        _run_chunks(cur, insert_sql, insert_rows)
         cur.execute(
             "UPDATE Suppliers SET LastUpdated = ? WHERE SupplierID = ?",
             (now, int(supplier_id)),

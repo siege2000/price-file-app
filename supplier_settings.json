@@ -20,48 +20,56 @@
     }
   },
   "187": {
-    "template": "Toniq",
-    "skip_rows": 0,
-    "columns": {
-      "plu": "(None)",
-      "pharmacode": "Pharmacode",
-      "retail": "RRP",
-      "cost": "CTC",
-      "barcode": "Barcode",
-      "sc": "Pharmacode",
-      "outer": "Casepack"
-    },
-    "description": {
-      "columns": [
-        "Description"
-      ],
-      "prefix": "",
-      "separator": " ",
-      "title_case": true,
-      "normalize_units": true
+    "sheets": {
+      "_default": {
+        "template": "Toniq",
+        "skip_rows": 0,
+        "columns": {
+          "plu": "(None)",
+          "pharmacode": "Pharmacode",
+          "retail": "RRP",
+          "cost": "CTC",
+          "barcode": "Barcode",
+          "sc": "Pharmacode",
+          "outer": "Casepack"
+        },
+        "description": {
+          "columns": [
+            "Description"
+          ],
+          "prefix": "",
+          "separator": " ",
+          "title_case": true,
+          "normalize_units": true
+        }
+      }
     }
   },
   "510": {
-    "template": "RxOne",
-    "skip_rows": 0,
-    "columns": {
-      "plu": "(None)",
-      "pharmacode": "Pharmacode",
-      "retail": "RRP",
-      "cost": "W/Sale",
-      "barcode": "Barcode",
-      "sc": "Product Code",
-      "outer": "(None)"
-    },
-    "description": {
-      "columns": [
-        "Description",
-        "ML"
-      ],
-      "prefix": "HH",
-      "separator": " ",
-      "title_case": false,
-      "normalize_units": true
+    "sheets": {
+      "_default": {
+        "template": "RxOne",
+        "skip_rows": 0,
+        "columns": {
+          "plu": "(None)",
+          "pharmacode": "Pharmacode",
+          "retail": "RRP",
+          "cost": "W/Sale",
+          "barcode": "Barcode",
+          "sc": "Product Code",
+          "outer": "(None)"
+        },
+        "description": {
+          "columns": [
+            "Description",
+            "ML"
+          ],
+          "prefix": "HH",
+          "separator": " ",
+          "title_case": false,
+          "normalize_units": true
+        }
+      }
     }
   },
   "342": {
@@ -179,6 +187,32 @@
             "Unnamed: 2"
           ],
           "prefix": "Hea",
+          "separator": " ",
+          "title_case": true,
+          "normalize_units": true
+        }
+      }
+    }
+  },
+  "417": {
+    "sheets": {
+      "_default": {
+        "template": "Toniq",
+        "skip_rows": 0,
+        "columns": {
+          "plu": "Pharmacode",
+          "pharmacode": "Pharmacode",
+          "retail": "(None)",
+          "cost": "(None)",
+          "barcode": "Barcode",
+          "sc": "(None)",
+          "outer": "(None)"
+        },
+        "description": {
+          "columns": [
+            "Description"
+          ],
+          "prefix": "",
           "separator": " ",
           "title_case": true,
           "normalize_units": true

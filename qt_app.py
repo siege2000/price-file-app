@@ -31,8 +31,8 @@ from column_helpers import safe_str, tpl_field_default, tpl_desc_defaults
 from description_helpers import combine_columns, normalize_units, clean_description
 from editing_helpers import parse_money, apply_replacements
 from access_helpers import (
-    MAX_DESC_LEN, load_suppliers, build_upsert_preview, upsert_details,
-    replace_all_details,
+    MAX_DESC_LEN, load_suppliers, load_supplier_details,
+    build_upsert_preview, upsert_details, replace_all_details,
 )
 import sqlite_helper
 import config
@@ -177,18 +177,39 @@ class CursorPlacingDelegate(QStyledItemDelegate):
 
 
 # ── Worker threads ────────────────────────────────────────────────────────────
-class PreviewWorker(QThread):
-    done = pyqtSignal(object, object)   # (preview_df, stats_dict)
+class PrefetchWorker(QThread):
+    """Fetches existing Access Details for a supplier in the background."""
+    done = pyqtSignal(int, object)  # (supplier_id, DataFrame)
     error = pyqtSignal(str)
 
-    def __init__(self, export_df: pd.DataFrame, supplier_id: int):
+    def __init__(self, supplier_id: int):
         super().__init__()
-        self.export_df = export_df
         self.supplier_id = supplier_id
 
     def run(self):
         try:
-            preview, stats = build_upsert_preview(self.export_df, self.supplier_id)
+            df = load_supplier_details(self.supplier_id)
+            self.done.emit(self.supplier_id, df)
+        except Exception as e:
+            self.error.emit(str(e))
+
+
+class PreviewWorker(QThread):
+    done = pyqtSignal(object, object)   # (preview_df, stats_dict)
+    error = pyqtSignal(str)
+
+    def __init__(self, export_df: pd.DataFrame, supplier_id: int,
+                 existing_df: pd.DataFrame | None = None):
+        super().__init__()
+        self.export_df = export_df
+        self.supplier_id = supplier_id
+        self.existing_df = existing_df
+
+    def run(self):
+        try:
+            preview, stats = build_upsert_preview(
+                self.export_df, self.supplier_id, existing_df=self.existing_df
+            )
             self.done.emit(preview, stats)
         except Exception as e:
             self.error.emit(str(e))
@@ -481,6 +502,9 @@ class PriceFileWidget(QWidget):
         self._replace_worker: Optional[ReplaceWorker] = None
         self._sqlite_upsert_worker: Optional[SqliteUpsertWorker] = None
         self._sqlite_replace_worker: Optional[SqliteReplaceWorker] = None
+        self._prefetch_worker: Optional[PrefetchWorker] = None
+        self._prefetched_details: Optional[pd.DataFrame] = None
+        self._prefetch_supplier_id: Optional[int] = None
         self._current_sheet: Optional[str] = None
         self._excel_sheets: list[str] = []
 
@@ -1370,13 +1394,42 @@ class PriceFileWidget(QWidget):
         self._update_supplier_rules_label()
 
     def _on_supplier_changed(self):
-        """When the user picks a different supplier, load their saved settings (if file open)."""
+        """When the user picks a different supplier, load their saved settings and prefetch Access data."""
         self._update_supplier_rules_label()
-        if self._df is None:
-            return
         supplier_id = self._get_supplier_id()
         if supplier_id is not None:
+            self._start_prefetch(supplier_id)
+        if self._df is None:
+            return
+        if supplier_id is not None:
             self._apply_supplier_settings(supplier_id)
+
+    def _start_prefetch(self, supplier_id: int):
+        """Start a background fetch of existing Access Details for the given supplier."""
+        # Cancel any in-progress prefetch for a different supplier
+        if self._prefetch_worker is not None and self._prefetch_worker.isRunning():
+            self._prefetch_worker.done.disconnect()
+            self._prefetch_worker.error.disconnect()
+            self._prefetch_worker = None
+        self._prefetched_details = None
+        self._prefetch_supplier_id = None
+        self.status_message.emit("Fetching supplier data from Access…")
+        self._prefetch_worker = PrefetchWorker(supplier_id)
+        self._prefetch_worker.done.connect(self._on_prefetch_done)
+        self._prefetch_worker.error.connect(self._on_prefetch_error)
+        self._prefetch_worker.start()
+
+    def _on_prefetch_done(self, supplier_id: int, df: pd.DataFrame):
+        self._prefetch_supplier_id = supplier_id
+        self._prefetched_details = df
+        self.status_message.emit(
+            f"Supplier data ready — {len(df)} existing records cached."
+        )
+
+    def _on_prefetch_error(self, msg: str):
+        self._prefetched_details = None
+        self._prefetch_supplier_id = None
+        self.status_message.emit(f"Prefetch failed (will fetch on demand): {msg}")
 
     def _get_sheet_key(self) -> str:
         """Return the settings key for the currently active sheet (or '_default')."""
@@ -1499,8 +1552,17 @@ class PriceFileWidget(QWidget):
             QMessageBox.warning(self, "Preview", "No supplier selected.")
             return
         self._btn_preview_upsert.setEnabled(False)
-        self._btn_preview_upsert.setText("Loading…")
-        self._preview_worker = PreviewWorker(self._export_df, supplier_id)
+        # Use pre-fetched Access data if it's for the current supplier
+        cached = (
+            self._prefetched_details
+            if self._prefetch_supplier_id == supplier_id and self._prefetched_details is not None
+            else None
+        )
+        if cached is not None:
+            self._btn_preview_upsert.setText("Comparing…")
+        else:
+            self._btn_preview_upsert.setText("Loading…")
+        self._preview_worker = PreviewWorker(self._export_df, supplier_id, existing_df=cached)
         self._preview_worker.done.connect(self._on_preview_done)
         self._preview_worker.error.connect(self._on_preview_error)
         self._preview_worker.start()
@@ -1661,6 +1723,8 @@ class PriceFileWidget(QWidget):
         self._preview_model = None
         self._upsert_skipped_rows = None
         self._last_preview_stats = None
+        self._prefetched_details = None
+        self._prefetch_supplier_id = None
 
         self._lbl_file.setText("No file loaded")
         self._cmb_sheet_config.blockSignals(True)

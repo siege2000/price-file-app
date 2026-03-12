@@ -95,16 +95,19 @@ def load_supplier_details(supplier_id: int) -> pd.DataFrame:
 
 
 def build_upsert_preview(
-    export_df: pd.DataFrame, supplier_id: int
+    export_df: pd.DataFrame,
+    supplier_id: int,
+    existing_df: pd.DataFrame | None = None,
 ) -> tuple[pd.DataFrame, dict]:
     """
     Compare export_df against existing Details records for the supplier.
 
+    Pass existing_df to use a pre-fetched copy and skip the Access round-trip.
     Returns (preview_df, stats) where stats contains match diagnostics.
     Match order: Supplier+Code first, then Barcode fallback.
     New entries are sorted to the top.
     """
-    existing = load_supplier_details(supplier_id)
+    existing = existing_df if existing_df is not None else load_supplier_details(supplier_id)
 
     # Build lookup dicts keyed by normalised string
     by_code: dict = {}
@@ -214,16 +217,17 @@ def upsert_details(
     supplier_id: int,
     mark_updated: bool = True,
     guid_field: str = "PartCodeGuid",
+    existing_df: pd.DataFrame | None = None,
 ) -> tuple[int, int]:
     """
     Upsert into Access Details table.
 
+    Fetches existing records once (or uses existing_df if pre-fetched), classifies
+    each row as an update-by-code, update-by-barcode, or insert, then executes all
+    three groups as batched executemany calls — reducing N round trips to 3.
     Match order: SupplierID + Code first, then SupplierID + Barcode fallback.
-    Updates Description, Cost, Retail, Pharmacode and updated timestamp if record exists.
-    Inserts new record if no match found.
     """
     df = export_df.copy()
-
     df["SupplierID"] = int(supplier_id)
     df["Code"] = df.get("Supplier_Code", "").fillna("").astype(str)
     df["Description"] = df.get("TradeName", "").fillna("").astype(str).str.slice(0, MAX_DESC_LEN)
@@ -238,8 +242,44 @@ def upsert_details(
         df["Outers"] = 1
 
     now = datetime.now()
-    updated_count = 0
-    inserted_count = 0
+
+    # Build lookup sets from existing records (one fetch, or use pre-fetched copy)
+    existing = existing_df if existing_df is not None else load_supplier_details(supplier_id)
+    by_code: set[str] = set()
+    by_barcode: set[str] = set()
+    for _, row in existing.iterrows():
+        code = str(row["Code"] or "").strip()
+        barcode = str(row["Barcode"] or "").strip()
+        if code:
+            by_code.add(code)
+        if barcode:
+            by_barcode.add(barcode)
+
+    # Classify each export row into one of three buckets
+    update_code_rows: list[tuple] = []
+    update_barcode_rows: list[tuple] = []
+    insert_rows: list[tuple] = []
+
+    for r in df.itertuples(index=False):
+        sup_code = (r.Code or "").strip()
+        barcode = (r.Barcode or "").strip()
+        desc = r.Description
+        pharmacode = r.Pharmacode
+        cost = float(r.Cost)
+        retail = float(r.Retail)
+        outers = int(r.Outers)
+        upd_params = (desc, cost, retail, pharmacode, outers, bool(mark_updated), now, now, new_guid())
+
+        if sup_code and sup_code in by_code:
+            update_code_rows.append(upd_params + (int(supplier_id), sup_code))
+        elif barcode and barcode in by_barcode:
+            update_barcode_rows.append(upd_params + (int(supplier_id), barcode))
+        else:
+            insert_rows.append((
+                new_guid(), int(supplier_id), sup_code, desc, pharmacode,
+                cost, retail, barcode, outers,
+                bool(mark_updated), now, now, now, new_guid(),
+            ))
 
     update_by_partcode_sql = """
         UPDATE Details
@@ -247,14 +287,12 @@ def upsert_details(
             [Updated] = ?, [LastUpdated] = ?, [LastChange] = ?, [PartCodeGuid] = ?
         WHERE SupplierID = ? AND Code = ?
     """
-
     update_by_barcode_sql = """
         UPDATE Details
         SET [Description] = ?, [Cost] = ?, [Retail] = ?, [Pharmacode] = ?, [Outers] = ?,
             [Updated] = ?, [LastUpdated] = ?, [LastChange] = ?, [PartCodeGuid] = ?
         WHERE SupplierID = ? AND Barcode = ?
     """
-
     insert_sql = f"""
         INSERT INTO Details
         ({guid_field}, SupplierID, Code, Description, Pharmacode, Cost, Retail, Barcode,
@@ -264,55 +302,20 @@ def upsert_details(
 
     with get_access_conn() as conn:
         cur = conn.cursor()
-
-        for r in df.itertuples(index=False):
-            supplier = r.SupplierID
-            sup_code = (r.Code or "").strip()
-            barcode = (r.Barcode or "").strip()
-            desc = r.Description
-            pharmacode = r.Pharmacode
-            cost = float(r.Cost)
-            retail = float(r.Retail)
-            Outers = int(r.Outers)
-
-            did_update = False
-
-            # Match by supplier code first
-            if sup_code:
-                cur.execute(
-                    update_by_partcode_sql,
-                    (desc, cost, retail, pharmacode, Outers, bool(mark_updated), now, now, new_guid(), supplier, sup_code),
-                )
-                if cur.rowcount > 0:
-                    did_update = True
-                    updated_count += 1
-
-            # Fallback: match by barcode
-            if not did_update and barcode:
-                cur.execute(
-                    update_by_barcode_sql,
-                    (desc, cost, retail, pharmacode, Outers, bool(mark_updated), now, now, new_guid(), supplier, barcode),
-                )
-                if cur.rowcount > 0:
-                    did_update = True
-                    updated_count += 1
-
-            # Insert if no match
-            if not did_update:
-                cur.execute(
-                    insert_sql,
-                    (new_guid(), supplier, sup_code, desc, pharmacode, cost, retail, barcode,
-                     Outers, bool(mark_updated), now, now, now, new_guid()),
-                )
-                inserted_count += 1
-
+        cur.fast_executemany = False
+        if update_code_rows:
+            cur.executemany(update_by_partcode_sql, update_code_rows)
+        if update_barcode_rows:
+            cur.executemany(update_by_barcode_sql, update_barcode_rows)
+        if insert_rows:
+            cur.executemany(insert_sql, insert_rows)
         cur.execute(
             "UPDATE Suppliers SET LastUpdated = ? WHERE SupplierID = ?",
             (now, int(supplier_id)),
         )
         conn.commit()
 
-    return updated_count, inserted_count
+    return len(update_code_rows) + len(update_barcode_rows), len(insert_rows)
 
 
 def replace_all_details(

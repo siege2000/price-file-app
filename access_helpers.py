@@ -166,7 +166,13 @@ def build_upsert_preview(
             old_desc = str(existing_row["Description"] or "")
             old_cost = float(existing_row["Cost"] or 0) / 100
             old_retail = float(existing_row["Retail"] or 0) / 100
-            status = "UPDATE"
+            old_pharmacode = str(existing_row["Pharmacode"] or "")
+            # Detect whether any field actually changed
+            cost_changed = round(cost, 2) != round(old_cost, 2)
+            retail_changed = round(retail, 2) != round(old_retail, 2)
+            desc_changed = desc.strip() != old_desc.strip()
+            pharmacode_changed = pharmacode.strip() != old_pharmacode.strip()
+            status = "UPDATE" if (cost_changed or retail_changed or desc_changed or pharmacode_changed) else "UNCHANGED"
 
         rows.append({
             "Status": status,
@@ -184,8 +190,8 @@ def build_upsert_preview(
         })
 
     preview = pd.DataFrame(rows)
-    # NEW entries first
-    preview["_sort"] = preview["Status"].map({"NEW": 0, "UPDATE": 1})
+    # Sort: NEW first, then UPDATE, then UNCHANGED
+    preview["_sort"] = preview["Status"].map({"NEW": 0, "UPDATE": 1, "UNCHANGED": 2})
     preview = preview.sort_values("_sort").drop(columns=["_sort"]).reset_index(drop=True)
 
     def _sample(values):
@@ -206,10 +212,26 @@ def build_upsert_preview(
         "export_barcodes": _sample(df["_Barcode"].tolist()),
         "matched_by_code": matched_by_code,
         "matched_by_barcode": matched_by_barcode,
-        "new_count": len(preview) - matched_by_code - matched_by_barcode,
+        "new_count": (preview["Status"] == "NEW").sum(),
+        "update_count": (preview["Status"] == "UPDATE").sum(),
+        "unchanged_count": (preview["Status"] == "UNCHANGED").sum(),
     }
 
     return preview, stats
+
+
+def _row_changed(existing_row: pd.Series, desc: str, cost: float, retail: float, pharmacode: str) -> bool:
+    """Return True if any tracked field differs from the existing Access record."""
+    old_desc = str(existing_row["Description"] or "").strip()
+    old_cost = round(float(existing_row["Cost"] or 0) / 100, 2)
+    old_retail = round(float(existing_row["Retail"] or 0) / 100, 2)
+    old_pharmacode = str(existing_row["Pharmacode"] or "").strip()
+    return (
+        desc.strip() != old_desc
+        or round(cost, 2) != old_cost
+        or round(retail, 2) != old_retail
+        or pharmacode.strip() != old_pharmacode
+    )
 
 
 def upsert_details(
@@ -243,19 +265,19 @@ def upsert_details(
 
     now = datetime.now()
 
-    # Build lookup sets from existing records (one fetch, or use pre-fetched copy)
+    # Build lookup dicts from existing records (one fetch, or use pre-fetched copy)
     existing = existing_df if existing_df is not None else load_supplier_details(supplier_id)
-    by_code: set[str] = set()
-    by_barcode: set[str] = set()
+    by_code: dict[str, pd.Series] = {}
+    by_barcode: dict[str, pd.Series] = {}
     for _, row in existing.iterrows():
         code = str(row["Code"] or "").strip()
         barcode = str(row["Barcode"] or "").strip()
         if code:
-            by_code.add(code)
+            by_code[code] = row
         if barcode:
-            by_barcode.add(barcode)
+            by_barcode[barcode] = row
 
-    # Classify each export row into one of three buckets
+    # Classify each export row — skip rows where nothing has changed
     update_code_rows: list[tuple] = []
     update_barcode_rows: list[tuple] = []
     insert_rows: list[tuple] = []
@@ -271,9 +293,13 @@ def upsert_details(
         upd_params = (desc, cost, retail, pharmacode, outers, bool(mark_updated), now, now, new_guid())
 
         if sup_code and sup_code in by_code:
-            update_code_rows.append(upd_params + (int(supplier_id), sup_code))
+            ex = by_code[sup_code]
+            if _row_changed(ex, desc, cost, retail, pharmacode):
+                update_code_rows.append(upd_params + (int(supplier_id), sup_code))
         elif barcode and barcode in by_barcode:
-            update_barcode_rows.append(upd_params + (int(supplier_id), barcode))
+            ex = by_barcode[barcode]
+            if _row_changed(ex, desc, cost, retail, pharmacode):
+                update_barcode_rows.append(upd_params + (int(supplier_id), barcode))
         else:
             insert_rows.append((
                 new_guid(), int(supplier_id), sup_code, desc, pharmacode,

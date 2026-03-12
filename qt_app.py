@@ -85,6 +85,8 @@ class PandasModel(QAbstractTableModel):
                     return QBrush(QColor("#155724"))
                 if str(val) == "UPDATE":
                     return QBrush(QColor("#856404"))
+                if str(val) == "UNCHANGED":
+                    return QBrush(QColor("#6c757d"))
             if col == "Valid":
                 return QBrush(QColor("#155724") if str(val) == "✓" else QColor("#842029"))
 
@@ -94,6 +96,8 @@ class PandasModel(QAbstractTableModel):
                     return QBrush(QColor("#d4edda"))
                 if str(val) == "UPDATE":
                     return QBrush(QColor("#fff3cd"))
+                if str(val) == "UNCHANGED":
+                    return QBrush(QColor("#f8f9fa"))
             if col == "Chars":
                 try:
                     if int(val) > 40:
@@ -1585,19 +1589,23 @@ class PriceFileWidget(QWidget):
 
         new_count = (preview_df["Status"] == "NEW").sum()
         upd_count = (preview_df["Status"] == "UPDATE").sum()
+        unchanged_count = (preview_df["Status"] == "UNCHANGED").sum()
         long_count = (preview_df["Chars"] > 40).sum()
         info = (
             f"{stats['existing_count']} in Access  |  "
             f"matched by code: {stats['matched_by_code']}  |  "
             f"matched by barcode: {stats['matched_by_barcode']}  |  "
-            f"{new_count} new  |  {upd_count} updates"
+            f"{new_count} new  |  {upd_count} updates  |  "
+            f"<span style='color:#6c757d'>{unchanged_count} unchanged</span>"
         )
         if long_count:
             info += f"  |  <span style='color:#842029'>⚠ {long_count} exceed 40 chars</span>"
         self._lbl_preview_info.setText(info)
 
         self._show_preview(preview_df)
-        self.status_message.emit(f"Preview: {new_count} new, {upd_count} updates.")
+        self.status_message.emit(
+            f"Preview: {new_count} new, {upd_count} updates, {unchanged_count} unchanged."
+        )
 
     def _on_preview_error(self, msg: str):
         self._btn_preview_upsert.setEnabled(True)

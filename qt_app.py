@@ -808,6 +808,11 @@ class PriceFileWidget(QWidget):
         self._btn_sqlite_replace.clicked.connect(self._exec_sqlite_replace)
         action_bar.addWidget(self._btn_sqlite_upsert)
         action_bar.addWidget(self._btn_sqlite_replace)
+        btn_browse_sqlite = QPushButton("Browse SQLite…")
+        btn_browse_sqlite.setToolTip("Open the SQLite database browser / editor")
+        btn_browse_sqlite.setStyleSheet("padding: 4px 12px;")
+        btn_browse_sqlite.clicked.connect(self._open_sqlite_browser)
+        action_bar.addWidget(btn_browse_sqlite)
         root.addLayout(action_bar)
 
         self._lbl_preview_info = QLabel("")
@@ -1933,6 +1938,13 @@ class PriceFileWidget(QWidget):
         self._btn_sqlite_replace.setEnabled(True)
         self._btn_sqlite_replace.setText("Replace All → SQLite")
         QMessageBox.critical(self, "SQLite Replace Error", msg)
+
+    # ─── SQLite browser ───────────────────────────────────────────────────────
+    def _open_sqlite_browser(self):
+        """Open the SQLite database browser / editor dialog."""
+        from sqlite_browser import SqliteBrowserDialog
+        dlg = SqliteBrowserDialog(self)
+        dlg.exec()
 
     # ─── Diagnostics ──────────────────────────────────────────────────────────
     def _show_diagnostics(self):

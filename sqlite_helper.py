@@ -403,3 +403,110 @@ def build_upsert_preview(
     }
 
     return preview, stats
+
+
+# ── Browser helpers ────────────────────────────────────────────────────────────
+
+# Columns shown in the browser grid (Cost/Retail converted to dollars for display)
+BROWSER_DISPLAY_COLS = ["Code", "Barcode", "Description", "Pharmacode",
+                        "Cost", "Retail", "Outers", "Updated"]
+BROWSER_EDITABLE_COLS = ["Description", "Cost", "Retail", "Pharmacode", "Outers"]
+
+
+def load_details_for_browser(supplier_id: int) -> pd.DataFrame:
+    """Load Details for supplier and convert Cost/Retail to dollars for display."""
+    init_db()
+    with get_sqlite_conn() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT Code, Barcode, Description, Pharmacode, Cost, Retail, Outers, Updated "
+            "FROM Details WHERE SupplierID = ? ORDER BY Description",
+            (int(supplier_id),),
+        )
+        cols = [d[0] for d in cur.description]
+        rows = cur.fetchall()
+    df = pd.DataFrame([list(r) for r in rows], columns=cols)
+    df["Cost"] = (pd.to_numeric(df["Cost"], errors="coerce").fillna(0) / 100).round(2)
+    df["Retail"] = (pd.to_numeric(df["Retail"], errors="coerce").fillna(0) / 100).round(2)
+    return df
+
+
+def save_details_from_browser(supplier_id: int, df: pd.DataFrame) -> int:
+    """Replace all Details for supplier with the edited browser DataFrame.
+
+    Cost/Retail are expected as dollars; converts back to integer cents for storage.
+    Returns number of rows saved.
+    """
+    init_db()
+    now = _dt(datetime.now())
+    sid = int(supplier_id)
+    df = df.copy()
+    df["Cost"] = (pd.to_numeric(df["Cost"], errors="coerce").fillna(0) * 100).round().astype(int)
+    df["Retail"] = (pd.to_numeric(df["Retail"], errors="coerce").fillna(0) * 100).round().astype(int)
+    df["Outers"] = pd.to_numeric(df["Outers"], errors="coerce").fillna(1).round().astype(int)
+    df["Outers"] = df["Outers"].where(df["Outers"] > 0, 1)
+    df["Description"] = df["Description"].fillna("").astype(str).str.strip().str.slice(0, 40)
+    df["Pharmacode"] = df["Pharmacode"].fillna("").astype(str)
+    df["Updated"] = pd.to_numeric(df.get("Updated", 1), errors="coerce").fillna(1).astype(int)
+
+    rows = [
+        (
+            new_guid(), sid,
+            str(r.Code or ""), str(r.Description or ""), str(r.Pharmacode or ""),
+            int(r.Cost), int(r.Retail), str(r.Barcode or ""),
+            int(r.Outers), int(r.Updated), now, now, now, new_guid(),
+        )
+        for r in df.itertuples(index=False)
+    ]
+    sql = """
+        INSERT INTO Details
+            (PartCodeGuid, SupplierID, Code, Description, Pharmacode,
+             Cost, Retail, Barcode, Outers, Updated, LastUpdated,
+             DateCreated, LastChange, StockcardGuid)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """
+    with get_sqlite_conn() as conn:
+        conn.execute("DELETE FROM Details WHERE SupplierID = ?", (sid,))
+        conn.executemany(sql, rows)
+        conn.commit()
+    return len(rows)
+
+
+def get_table_names() -> list[str]:
+    """Return all user table names in the SQLite database."""
+    init_db()
+    with get_sqlite_conn() as conn:
+        cur = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+        )
+        return [r[0] for r in cur.fetchall()]
+
+
+def load_full_table(table_name: str) -> pd.DataFrame:
+    """Load an entire table as a DataFrame (for non-Details tables in the browser)."""
+    init_db()
+    with get_sqlite_conn() as conn:
+        cur = conn.cursor()
+        cur.execute(f"SELECT * FROM [{table_name}]")  # noqa: S608 — internal use only
+        cols = [d[0] for d in cur.description]
+        return pd.DataFrame([list(r) for r in cur.fetchall()], columns=cols)
+
+
+def delete_details_by_keys(supplier_id: int, codes: list[str]) -> int:
+    """Delete Details rows for supplier where Code OR Barcode is in the given list.
+
+    Returns the number of rows deleted.
+    """
+    init_db()
+    if not codes:
+        return 0
+    placeholders = ",".join("?" * len(codes))
+    sid = int(supplier_id)
+    with get_sqlite_conn() as conn:
+        cur = conn.execute(
+            f"DELETE FROM Details WHERE SupplierID = ? "
+            f"AND (Code IN ({placeholders}) OR Barcode IN ({placeholders}))",
+            [sid] + codes + codes,
+        )
+        conn.commit()
+        return cur.rowcount

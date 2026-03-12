@@ -84,14 +84,22 @@ def save_to_details(export_df: pd.DataFrame, supplier_id: int, mark_updated: boo
 
 
 def load_supplier_details(supplier_id: int) -> pd.DataFrame:
-    """Load all Details records for a supplier from Access."""
-    with get_access_conn() as conn:
-        sql = """
+    """Load all Details records for a supplier from Access.
+
+    Uses cursor.fetchall() rather than pd.read_sql to avoid pyodbc row-by-row
+    overhead, which is significantly faster over a network drive.
+    """
+    sql = """
         SELECT Code, Barcode, Description, Cost, Retail, Pharmacode
         FROM Details
         WHERE SupplierID = ?
-        """
-        return pd.read_sql(sql, conn, params=[int(supplier_id)])
+    """
+    with get_access_conn() as conn:
+        cur = conn.cursor()
+        cur.execute(sql, [int(supplier_id)])
+        cols = [d[0] for d in cur.description]
+        rows = cur.fetchall()
+    return pd.DataFrame([list(r) for r in rows], columns=cols)
 
 
 def build_upsert_preview(
@@ -103,101 +111,131 @@ def build_upsert_preview(
     Compare export_df against existing Details records for the supplier.
 
     Pass existing_df to use a pre-fetched copy and skip the Access round-trip.
-    Returns (preview_df, stats) where stats contains match diagnostics.
+    Uses vectorized pandas merge (no iterrows) for fast comparison on large files.
     Match order: Supplier+Code first, then Barcode fallback.
-    New entries are sorted to the top.
+    Returns (preview_df, stats). Sort order: NEW → UPDATE → UNCHANGED.
     """
-    existing = existing_df if existing_df is not None else load_supplier_details(supplier_id)
+    existing = (existing_df if existing_df is not None else load_supplier_details(supplier_id)).copy()
 
-    # Build lookup dicts keyed by normalised string
-    by_code: dict = {}
-    by_barcode: dict = {}
-    for _, row in existing.iterrows():
-        code = str(row["Code"] or "").strip()
-        barcode = str(row["Barcode"] or "").strip()
-        if code:
-            by_code[code] = row
-        if barcode:
-            by_barcode[barcode] = row
+    # Normalise existing lookup columns
+    existing["_ecode"] = existing["Code"].fillna("").astype(str).str.strip()
+    existing["_ebarcode"] = existing["Barcode"].fillna("").astype(str).str.strip()
+    existing["_edesc"] = existing["Description"].fillna("").astype(str).str.strip()
+    existing["_ecost"] = (pd.to_numeric(existing["Cost"], errors="coerce").fillna(0) / 100).round(2)
+    existing["_eretail"] = (pd.to_numeric(existing["Retail"], errors="coerce").fillna(0) / 100).round(2)
+    existing["_epharm"] = existing["Pharmacode"].fillna("").astype(str).str.strip()
 
-    df = export_df.copy()
-    df["_Code"] = df.get("Supplier_Code", "").fillna("").astype(str).str.strip()
-    df["_Barcode"] = df.get("Barcode", "").fillna("").astype(str).str.strip()
-    df["_PLU"] = df.get("PLU", "").fillna("").astype(str).str.strip()
-    df["_Pharmacode"] = df.get("Pharmacode", "").fillna("").astype(str).str.strip()
-    df["_Description"] = df.get("TradeName", "").fillna("").astype(str)
-    df["_Cost"] = pd.to_numeric(df.get("Cost", 0), errors="coerce").fillna(0.0)
-    df["_Retail"] = pd.to_numeric(df.get("Retail", 0), errors="coerce").fillna(0.0)
+    ex_cols = ["_edesc", "_ecost", "_eretail", "_epharm"]
+
+    # Build deduplicated lookup tables indexed by code / barcode
+    ex_by_code = (
+        existing[existing["_ecode"] != ""]
+        .drop_duplicates("_ecode", keep="last")
+        .set_index("_ecode")[ex_cols]
+    )
+    ex_by_barcode = (
+        existing[existing["_ebarcode"] != ""]
+        .drop_duplicates("_ebarcode", keep="last")
+        .set_index("_ebarcode")[ex_cols]
+    )
+
+    # Normalise export columns
+    df = export_df.copy().reset_index(drop=True)
+    df["_code"] = df.get("Supplier_Code", "").fillna("").astype(str).str.strip()
+    df["_barcode"] = df.get("Barcode", "").fillna("").astype(str).str.strip()
+    df["_plu"] = df.get("PLU", "").fillna("").astype(str).str.strip()
+    df["_pharm"] = df.get("Pharmacode", "").fillna("").astype(str).str.strip()
+    df["_desc"] = df.get("TradeName", "").fillna("").astype(str).str.strip()
+    df["_cost"] = pd.to_numeric(df.get("Cost", 0), errors="coerce").fillna(0.0).round(2)
+    df["_retail"] = pd.to_numeric(df.get("Retail", 0), errors="coerce").fillna(0.0).round(2)
     if "Outers" in df.columns:
-        _Outers = pd.to_numeric(df["Outers"], errors="coerce").fillna(0).round().astype(int)
-        df["_Outers"] = _Outers.where(_Outers > 0, 1)
+        _o = pd.to_numeric(df["Outers"], errors="coerce").fillna(0).round().astype(int)
+        df["_outers"] = _o.where(_o > 0, 1)
     else:
-        df["_Outers"] = 1
+        df["_outers"] = 1
 
-    rows = []
-    matched_by_code = 0
-    matched_by_barcode = 0
+    # --- Step 1: match by code ---
+    has_code = df["_code"] != ""
+    matched_code = df[has_code].merge(
+        ex_by_code, left_on="_code", right_index=True, how="left"
+    )
+    # Rows with no code, or code not found in Access
+    no_code_match_mask = ~has_code | (has_code & ~df["_code"].isin(ex_by_code.index))
+    df_remaining = df[no_code_match_mask].copy()
 
-    for _, r in df.iterrows():
-        code = r["_Code"]
-        barcode = r["_Barcode"]
-        plu = r["_PLU"]
-        pharmacode = r["_Pharmacode"]
-        desc = r["_Description"]
-        cost = float(r["_Cost"])
-        retail = float(r["_Retail"])
-        Outers = int(r["_Outers"])
+    # --- Step 2: match remaining by barcode ---
+    has_barcode = df_remaining["_barcode"] != ""
+    matched_barcode = df_remaining[has_barcode].merge(
+        ex_by_barcode, left_on="_barcode", right_index=True, how="left"
+    )
+    unmatched = df_remaining[~has_barcode].copy()
+    # Also unmatched barcodes
+    unmatched = pd.concat([
+        unmatched,
+        matched_barcode[matched_barcode["_edesc"].isna()],
+    ], ignore_index=True)
+    matched_barcode = matched_barcode[matched_barcode["_edesc"].notna()]
 
-        existing_row = None
-        # Match by supplier code first, then barcode
-        if code and code in by_code:
-            existing_row = by_code[code]
-            matched_by_code += 1
-        elif barcode and barcode in by_barcode:
-            existing_row = by_barcode[barcode]
-            matched_by_barcode += 1
+    # --- Build preview rows ---
+    def _make_rows(matched: pd.DataFrame, match_type: str) -> pd.DataFrame:
+        """Classify matched rows as UPDATE or UNCHANGED."""
+        m = matched.copy()
+        changed = (
+            (m["_desc"] != m["_edesc"]) |
+            (m["_cost"] != m["_ecost"]) |
+            (m["_retail"] != m["_eretail"]) |
+            (m["_pharm"] != m["_epharm"])
+        )
+        m["Status"] = changed.map({True: "UPDATE", False: "UNCHANGED"})
+        m["Old_Description"] = m["_edesc"].fillna("")
+        m["Old_Cost"] = m["_ecost"]
+        m["Old_Retail"] = m["_eretail"]
+        return m
 
-        if existing_row is None:
-            status = "NEW"
-            old_desc = ""
-            old_cost = None
-            old_retail = None
-        else:
-            old_desc = str(existing_row["Description"] or "")
-            old_cost = float(existing_row["Cost"] or 0) / 100
-            old_retail = float(existing_row["Retail"] or 0) / 100
-            old_pharmacode = str(existing_row["Pharmacode"] or "")
-            # Detect whether any field actually changed
-            cost_changed = round(cost, 2) != round(old_cost, 2)
-            retail_changed = round(retail, 2) != round(old_retail, 2)
-            desc_changed = desc.strip() != old_desc.strip()
-            pharmacode_changed = pharmacode.strip() != old_pharmacode.strip()
-            status = "UPDATE" if (cost_changed or retail_changed or desc_changed or pharmacode_changed) else "UNCHANGED"
+    code_rows = _make_rows(matched_code[matched_code["_edesc"].notna()], "code")
+    # rows matched by code but not found (code present but not in Access = NEW)
+    code_new = matched_code[matched_code["_edesc"].isna()].copy()
+    code_new["Status"] = "NEW"
+    code_new["Old_Description"] = ""
+    code_new["Old_Cost"] = None
+    code_new["Old_Retail"] = None
 
-        rows.append({
-            "Status": status,
-            "Supplier_Code": code,
-            "Barcode": barcode,
-            "PLU": plu,
-            "Pharmacode": pharmacode,
-            "Outers": Outers,
-            "Old_Description": old_desc,
-            "New_Description": desc,
-            "Old_Cost": old_cost,
-            "New_Cost": cost,
-            "Old_Retail": old_retail,
-            "New_Retail": retail,
-        })
+    barcode_rows = _make_rows(matched_barcode, "barcode")
 
-    preview = pd.DataFrame(rows)
-    # Sort: NEW first, then UPDATE, then UNCHANGED
+    unmatched["Status"] = "NEW"
+    unmatched["Old_Description"] = ""
+    unmatched["Old_Cost"] = None
+    unmatched["Old_Retail"] = None
+
+    all_rows = pd.concat([code_rows, code_new, barcode_rows, unmatched], ignore_index=True)
+
+    preview = pd.DataFrame({
+        "Status": all_rows["Status"],
+        "Supplier_Code": all_rows["_code"],
+        "Barcode": all_rows["_barcode"],
+        "PLU": all_rows["_plu"],
+        "Pharmacode": all_rows["_pharm"],
+        "Outers": all_rows["_outers"],
+        "Old_Description": all_rows["Old_Description"],
+        "New_Description": all_rows["_desc"],
+        "Old_Cost": all_rows["Old_Cost"],
+        "New_Cost": all_rows["_cost"],
+        "Old_Retail": all_rows["Old_Retail"],
+        "New_Retail": all_rows["_retail"],
+    })
+
+    # Sort: NEW → UPDATE → UNCHANGED
     preview["_sort"] = preview["Status"].map({"NEW": 0, "UPDATE": 1, "UNCHANGED": 2})
     preview = preview.sort_values("_sort").drop(columns=["_sort"]).reset_index(drop=True)
 
-    def _sample(values):
+    matched_by_code = len(code_rows)
+    matched_by_barcode = len(barcode_rows)
+
+    def _sample(series: pd.Series) -> list:
         """Collect up to 8 unique non-empty values for diagnostic display."""
-        seen = []
-        for v in values:
+        seen: list = []
+        for v in series:
+            v = str(v).strip()
             if v and v not in seen:
                 seen.append(v)
             if len(seen) >= 8:
@@ -206,15 +244,15 @@ def build_upsert_preview(
 
     stats = {
         "existing_count": len(existing),
-        "access_codes": _sample(by_code.keys()),
-        "access_barcodes": _sample(by_barcode.keys()),
-        "export_codes": _sample(df["_Code"].tolist()),
-        "export_barcodes": _sample(df["_Barcode"].tolist()),
+        "access_codes": _sample(ex_by_code.index.to_series()),
+        "access_barcodes": _sample(ex_by_barcode.index.to_series()),
+        "export_codes": _sample(df["_code"]),
+        "export_barcodes": _sample(df["_barcode"]),
         "matched_by_code": matched_by_code,
         "matched_by_barcode": matched_by_barcode,
-        "new_count": (preview["Status"] == "NEW").sum(),
-        "update_count": (preview["Status"] == "UPDATE").sum(),
-        "unchanged_count": (preview["Status"] == "UNCHANGED").sum(),
+        "new_count": int((preview["Status"] == "NEW").sum()),
+        "update_count": int((preview["Status"] == "UPDATE").sum()),
+        "unchanged_count": int((preview["Status"] == "UNCHANGED").sum()),
     }
 
     return preview, stats

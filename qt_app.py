@@ -1556,16 +1556,24 @@ class PriceFileWidget(QWidget):
             QMessageBox.warning(self, "Preview", "No supplier selected.")
             return
         self._btn_preview_upsert.setEnabled(False)
-        # Use pre-fetched Access data if it's for the current supplier
+
+        # If the prefetch is still running for this supplier, wait for it to
+        # finish rather than opening a second concurrent Access connection.
+        if (
+            self._prefetch_worker is not None
+            and self._prefetch_worker.isRunning()
+        ):
+            self._btn_preview_upsert.setText("Waiting for supplier data…")
+            self._prefetch_worker.done.connect(lambda sid, df: self._preview_upsert())
+            return
+
+        # Use pre-fetched Access data if available for the current supplier
         cached = (
             self._prefetched_details
             if self._prefetch_supplier_id == supplier_id and self._prefetched_details is not None
             else None
         )
-        if cached is not None:
-            self._btn_preview_upsert.setText("Comparing…")
-        else:
-            self._btn_preview_upsert.setText("Loading…")
+        self._btn_preview_upsert.setText("Comparing…" if cached is not None else "Loading…")
         self._preview_worker = PreviewWorker(self._export_df, supplier_id, existing_df=cached)
         self._preview_worker.done.connect(self._on_preview_done)
         self._preview_worker.error.connect(self._on_preview_error)

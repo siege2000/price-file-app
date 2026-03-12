@@ -108,6 +108,27 @@ def ensure_supplier(supplier_name: str, supplier_code: str = "") -> int:
         return cur.lastrowid
 
 
+def ensure_supplier_by_id(supplier_id: int, supplier_name: str, supplier_code: str = "") -> None:
+    """Ensure a Suppliers row exists with the exact SupplierID from Access.
+
+    If a row with that ID already exists, it is left unchanged.
+    If it doesn't exist, it is inserted with the given ID so that Details
+    foreign keys remain consistent with the Access database.
+    """
+    init_db()
+    with get_sqlite_conn() as conn:
+        exists = conn.execute(
+            "SELECT 1 FROM Suppliers WHERE SupplierID = ?", (int(supplier_id),)
+        ).fetchone()
+        if not exists:
+            conn.execute(
+                "INSERT INTO Suppliers (SupplierID, SupplierName, SupplierCode, LastUpdated) "
+                "VALUES (?, ?, ?, ?)",
+                (int(supplier_id), supplier_name, supplier_code, _dt(datetime.now())),
+            )
+            conn.commit()
+
+
 # ── Data prep (shared by all write functions) ─────────────────────────────────
 
 def _prepare_df(export_df: pd.DataFrame, supplier_id: int, mark_updated: bool) -> pd.DataFrame:

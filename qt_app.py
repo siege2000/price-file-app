@@ -269,14 +269,20 @@ class SqliteUpsertWorker(QThread):
     done = pyqtSignal(int, int)   # (updated, inserted)
     error = pyqtSignal(str)
 
-    def __init__(self, export_df: pd.DataFrame, supplier_id: int, mark_updated: bool):
+    def __init__(self, export_df: pd.DataFrame, supplier_id: int, mark_updated: bool,
+                 supplier_name: str = "", supplier_code: str = ""):
         super().__init__()
         self.export_df = export_df
         self.supplier_id = supplier_id
         self.mark_updated = mark_updated
+        self.supplier_name = supplier_name
+        self.supplier_code = supplier_code
 
     def run(self):
         try:
+            sqlite_helper.ensure_supplier_by_id(
+                self.supplier_id, self.supplier_name, self.supplier_code
+            )
             updated, inserted = sqlite_helper.upsert_details(
                 self.export_df, self.supplier_id, mark_updated=self.mark_updated
             )
@@ -289,14 +295,20 @@ class SqliteReplaceWorker(QThread):
     done = pyqtSignal(int)   # rows inserted
     error = pyqtSignal(str)
 
-    def __init__(self, export_df: pd.DataFrame, supplier_id: int, mark_updated: bool):
+    def __init__(self, export_df: pd.DataFrame, supplier_id: int, mark_updated: bool,
+                 supplier_name: str = "", supplier_code: str = ""):
         super().__init__()
         self.export_df = export_df
         self.supplier_id = supplier_id
         self.mark_updated = mark_updated
+        self.supplier_name = supplier_name
+        self.supplier_code = supplier_code
 
     def run(self):
         try:
+            sqlite_helper.ensure_supplier_by_id(
+                self.supplier_id, self.supplier_name, self.supplier_code
+            )
             inserted = sqlite_helper.replace_all_details(
                 self.export_df, self.supplier_id, mark_updated=self.mark_updated
             )
@@ -1557,6 +1569,16 @@ class PriceFileWidget(QWidget):
         row = self._suppliers_df[self._suppliers_df["Label"] == label]
         return int(row["SupplierID"].iloc[0]) if not row.empty else None
 
+    def _get_supplier_name_code(self) -> tuple[str, str]:
+        """Return (SupplierName, SupplierCode) for the currently selected supplier."""
+        if self._suppliers_df is None:
+            return ("", "")
+        label = self._cmb_supplier.currentText()
+        row = self._suppliers_df[self._suppliers_df["Label"] == label]
+        if row.empty:
+            return ("", "")
+        return (str(row["SupplierName"].iloc[0] or ""), str(row["SupplierCode"].iloc[0] or ""))
+
     # ─── Preview upsert ───────────────────────────────────────────────────────
     def _preview_upsert(self):
         if self._export_df is None:
@@ -1871,8 +1893,10 @@ class PriceFileWidget(QWidget):
             return
         self._btn_sqlite_upsert.setEnabled(False)
         self._btn_sqlite_upsert.setText("Running…")
+        supplier_name, supplier_code = self._get_supplier_name_code()
         self._sqlite_upsert_worker = SqliteUpsertWorker(
-            export, supplier_id, self._chk_mark_updated.isChecked()
+            export, supplier_id, self._chk_mark_updated.isChecked(),
+            supplier_name=supplier_name, supplier_code=supplier_code,
         )
         self._sqlite_upsert_worker.done.connect(self._on_sqlite_upsert_done)
         self._sqlite_upsert_worker.error.connect(self._on_sqlite_upsert_error)
@@ -1916,8 +1940,10 @@ class PriceFileWidget(QWidget):
             return
         self._btn_sqlite_replace.setEnabled(False)
         self._btn_sqlite_replace.setText("Replacing…")
+        supplier_name, supplier_code = self._get_supplier_name_code()
         self._sqlite_replace_worker = SqliteReplaceWorker(
-            export, supplier_id, self._chk_mark_updated.isChecked()
+            export, supplier_id, self._chk_mark_updated.isChecked(),
+            supplier_name=supplier_name, supplier_code=supplier_code,
         )
         self._sqlite_replace_worker.done.connect(self._on_sqlite_replace_done)
         self._sqlite_replace_worker.error.connect(self._on_sqlite_replace_error)

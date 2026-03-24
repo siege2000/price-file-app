@@ -10,9 +10,7 @@ import config
 MAX_DESC_LEN = 40
 
 
-def get_access_conn():
-    """Open and return a pyodbc connection to the Access MDB using settings from config."""
-    mdb_path = config.get_mdb_path()
+def _access_conn(mdb_path: str) -> "pyodbc.Connection":
     if not os.path.isabs(mdb_path):
         mdb_path = os.path.join(os.getcwd(), mdb_path)
     password = config.get_access_password()
@@ -22,6 +20,28 @@ def get_access_conn():
         rf"PWD={password};"
     )
     return pyodbc.connect(conn_str)
+
+
+def get_access_conn():
+    """Open and return a pyodbc connection to Suppliers.mdb."""
+    return _access_conn(config.get_mdb_path())
+
+
+def get_settings1_conn():
+    """Open and return a pyodbc connection to Settings1.mdb."""
+    return _access_conn(config.get_settings1_mdb_path())
+
+
+def load_find_replace_rules() -> pd.DataFrame:
+    """Load all rows from FindAndReplace in Settings1.mdb.
+
+    Returns a DataFrame with columns: SupplierID, Find, Replace.
+    """
+    with get_settings1_conn() as conn:
+        return pd.read_sql(
+            "SELECT SupplierID, Find, Replace FROM FindAndReplace ORDER BY SupplierID",
+            conn,
+        )
 
 
 def load_suppliers():

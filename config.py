@@ -9,6 +9,7 @@ SETTINGS_FILE = "settings.ini"
 DEFAULTS = {
     "Access": {
         "mdb_path": "suppliers.mdb",
+        "settings1_mdb_path": "Settings1.mdb",
         "password": "LOCKIE MONDAY",
     },
     "SQLite": {
@@ -56,6 +57,10 @@ def save(cfg: configparser.ConfigParser) -> None:
 
 def get_mdb_path() -> str:
     return load().get("Access", "mdb_path", fallback=DEFAULTS["Access"]["mdb_path"])
+
+
+def get_settings1_mdb_path() -> str:
+    return load().get("Access", "settings1_mdb_path", fallback=DEFAULTS["Access"]["settings1_mdb_path"])
 
 
 def get_access_password() -> str:

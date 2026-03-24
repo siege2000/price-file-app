@@ -46,7 +46,7 @@ if mode == "Price File":
 
     try:
         # ---- Templates
-        templates = load_templates("templates.json")
+        templates = load_templates("data/templates.json")
         template_name = st.selectbox("Template", list(templates.keys()), index=0)
         tpl = templates[template_name]
 

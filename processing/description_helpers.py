@@ -2,7 +2,7 @@ from typing import List
 
 import pandas as pd
 
-from column_helpers import safe_str
+from .column_helpers import safe_str
 
 
 def combine_columns(df: pd.DataFrame, columns: List[str], sep: str = " ") -> pd.Series:

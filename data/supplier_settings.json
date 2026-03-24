@@ -219,5 +219,79 @@
         }
       }
     }
+  },
+  "453": {
+    "sheets": {
+      "Sheet1": {
+        "template": "Toniq",
+        "skip_rows": 0,
+        "columns": {
+          "plu": "(None)",
+          "pharmacode": "PHARMA CODE",
+          "retail": "(None)",
+          "cost": "(None)",
+          "barcode": "Unit EAN/ Barcode",
+          "sc": "HCL\nCODE",
+          "outer": "(None)"
+        },
+        "description": {
+          "columns": [
+            "PRODUCT DESCRIPTION"
+          ],
+          "prefix": "",
+          "separator": " ",
+          "title_case": true,
+          "normalize_units": true
+        }
+      },
+      "Sheet2": {
+        "template": "Toniq",
+        "skip_rows": 0,
+        "columns": {
+          "plu": "(None)",
+          "pharmacode": "Pharmacode",
+          "retail": "(None)",
+          "cost": "(None)",
+          "barcode": "Unit EAN/ Barcode",
+          "sc": "HALEON CODE\n(GMN)",
+          "outer": "(None)"
+        },
+        "description": {
+          "columns": [
+            "PRODUCT DESCRIPTION"
+          ],
+          "prefix": "",
+          "separator": " ",
+          "title_case": true,
+          "normalize_units": true
+        }
+      }
+    }
+  },
+  "556": {
+    "sheets": {
+      "WS - Barcodes & Pharmacodes": {
+        "template": "RxOne",
+        "skip_rows": 3,
+        "columns": {
+          "plu": "(None)",
+          "pharmacode": "(None)",
+          "retail": "Unnamed: 5",
+          "cost": "Unnamed: 4",
+          "barcode": "Unnamed: 2",
+          "sc": "          NUTRICOM WHOLESALE PRICELIST APR26",
+          "outer": "(None)"
+        },
+        "description": {
+          "columns": [
+            "Unnamed: 1"
+          ],
+          "prefix": "Nutricom",
+          "separator": " ",
+          "title_case": false,
+          "normalize_units": true
+        }
+      }
+    }
   }
 }

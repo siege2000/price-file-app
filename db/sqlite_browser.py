@@ -11,7 +11,7 @@ from PyQt6.QtWidgets import (
     QPlainTextEdit, QMessageBox, QSizePolicy, QFrame, QSplitter,
 )
 
-import sqlite_helper
+from . import sqlite_helper
 
 
 # ─── Thin worker for slow saves ───────────────────────────────────────────────

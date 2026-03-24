@@ -26,20 +26,20 @@ from PyQt6.QtWidgets import (
 )
 
 # ── project helpers ──────────────────────────────────────────────────────────
-from file_helpers import load_templates
-from column_helpers import safe_str, tpl_field_default, tpl_desc_defaults
-from description_helpers import combine_columns, normalize_units, clean_description
-from editing_helpers import parse_money, apply_replacements
-from access_helpers import (
+from processing.file_helpers import load_templates
+from processing.column_helpers import safe_str, tpl_field_default, tpl_desc_defaults
+from processing.description_helpers import combine_columns, normalize_units, clean_description
+from processing.editing_helpers import parse_money, apply_replacements
+from db.access_helpers import (
     MAX_DESC_LEN, load_suppliers, load_supplier_details,
     build_upsert_preview, upsert_details, replace_all_details,
 )
-import sqlite_helper
+from db import sqlite_helper
 import config
-from specials_widget import SpecialsWidget
+from specials.specials_widget import SpecialsWidget
 
-SUPPLIER_SETTINGS_FILE = "supplier_settings.json"
-SUPPLIER_RULES_FILE = "supplier_rules.json"
+SUPPLIER_SETTINGS_FILE = "data/supplier_settings.json"
+SUPPLIER_RULES_FILE = "data/supplier_rules.json"
 
 
 # ── Pandas ↔ Qt model ────────────────────────────────────────────────────────
@@ -851,13 +851,13 @@ class PriceFileWidget(QWidget):
     # ─── Template + supplier loading ──────────────────────────────────────────
     def _load_templates(self):
         try:
-            self._templates = load_templates("templates.json")
+            self._templates = load_templates("data/templates.json")
             self._cmb_template.blockSignals(True)
             self._cmb_template.clear()
             self._cmb_template.addItems(list(self._templates.keys()))
             self._cmb_template.blockSignals(False)
         except Exception as e:
-            QMessageBox.warning(self, "Templates", f"Could not load templates.json:\n{e}")
+            QMessageBox.warning(self, "Templates", f"Could not load data/templates.json:\n{e}")
 
     def _load_suppliers(self):
         try:
@@ -1015,7 +1015,7 @@ class PriceFileWidget(QWidget):
 
         if self._df is not None and len(self._df) > 0:
             try:
-                from description_helpers import combine_columns, normalize_units, clean_description
+                from processing.description_helpers import combine_columns, normalize_units, clean_description
                 sample = combine_columns(self._df.head(1), selected, sep=sep).iloc[0]
                 sample = clean_description(pd.Series([sample])).iloc[0]
                 if self._chk_title_case.isChecked():
@@ -1968,7 +1968,7 @@ class PriceFileWidget(QWidget):
     # ─── SQLite browser ───────────────────────────────────────────────────────
     def _open_sqlite_browser(self):
         """Open the SQLite database browser / editor dialog."""
-        from sqlite_browser import SqliteBrowserDialog
+        from db.sqlite_browser import SqliteBrowserDialog
         dlg = SqliteBrowserDialog(self)
         dlg.exec()
 

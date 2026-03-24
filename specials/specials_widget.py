@@ -20,7 +20,7 @@ from PyQt6.QtWidgets import (
     QMessageBox, QFileDialog,
 )
 
-from specials_helpers import (
+from .specials_helpers import (
     load_brands,
     get_special_id,
     save_specials,

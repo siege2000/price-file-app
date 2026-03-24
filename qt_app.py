@@ -1965,6 +1965,19 @@ class PriceFileWidget(QWidget):
         self._btn_sqlite_replace.setText("Replace All → SQLite")
         QMessageBox.critical(self, "SQLite Replace Error", msg)
 
+    # ─── Safe-close helper ────────────────────────────────────────────────────
+    def active_write_worker(self):
+        """Return the currently running write worker, or None."""
+        for w in (
+            self._upsert_worker,
+            self._replace_worker,
+            self._sqlite_upsert_worker,
+            self._sqlite_replace_worker,
+        ):
+            if w is not None and w.isRunning():
+                return w
+        return None
+
     # ─── SQLite browser ───────────────────────────────────────────────────────
     def _open_sqlite_browser(self):
         """Open the SQLite database browser / editor dialog."""
@@ -2144,6 +2157,29 @@ class MainWindow(QMainWindow):
     def _open_settings(self):
         dlg = SettingsDialog(self)
         dlg.exec()
+
+    def closeEvent(self, event):
+        """Block close if a database write is in progress to prevent partial commits."""
+        writers = []
+        w = self._price_widget.active_write_worker()
+        if w:
+            writers.append(w)
+        if self._specials_widget.is_write_in_progress():
+            writers.append(self._specials_widget._worker)
+
+        if writers:
+            reply = QMessageBox.question(
+                self,
+                "Write in progress",
+                "A database write is still in progress.\n\n"
+                "Wait for it to finish before closing?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.Yes,
+            )
+            if reply == QMessageBox.StandardButton.Yes:
+                for w in writers:
+                    w.wait(30_000)   # wait up to 30 seconds
+        event.accept()
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────

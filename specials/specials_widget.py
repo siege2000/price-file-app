@@ -248,6 +248,7 @@ class SpecialsWidget(QWidget):
         self._raw_file_df   : pd.DataFrame | None = None   # parsed file before mapping
         self._file_columns  : list[str] = []               # column headers from imported file
         self._worker        = None         # keep reference to prevent GC
+        self._write_in_progress = False    # True while a save worker is running
 
         self._build_ui()
         self._load_brands()
@@ -877,12 +878,14 @@ class SpecialsWidget(QWidget):
             return save_specials(grid_df, sid, start, finish, password,
                                  clear_existing=True)
 
+        self._write_in_progress = True
         self._worker = _Worker(_do)
         self._worker.finished.connect(self._on_save_done)
         self._worker.error.connect(self._on_save_error)
         self._worker.start()
 
     def _on_save_done(self, saved: int):
+        self._write_in_progress = False
         self._btn_save.setEnabled(True)
         self.status_message.emit(f"Saved {saved} row(s) to database.")
         QMessageBox.information(self, "Saved", f"{saved} row(s) saved successfully.")
@@ -892,9 +895,14 @@ class SpecialsWidget(QWidget):
         self._raw_file_df = None
 
     def _on_save_error(self, msg: str):
+        self._write_in_progress = False
         self._btn_save.setEnabled(True)
         self.status_message.emit(f"Save error: {msg}")
         QMessageBox.critical(self, "Save Error", msg)
+
+    def is_write_in_progress(self) -> bool:
+        """Return True if a database save is currently running."""
+        return self._write_in_progress and self._worker is not None and self._worker.isRunning()
 
     # ─── Load / Save grid CSV ─────────────────────────────────────────────────
     def _do_load_grid(self):

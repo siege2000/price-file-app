@@ -4,8 +4,18 @@ import pandas as pd
 
 
 def safe_str(series) -> pd.Series:
-    """Convert a series to stripped strings, replacing NaN with empty string."""
-    return pd.Series(series).astype("string").fillna("").str.strip()
+    """Convert a series to stripped strings, replacing NaN with empty string.
+
+    Integer-valued floats (e.g. 1263310.0 read from Excel) are converted
+    without the decimal suffix so barcodes/codes match correctly.
+    """
+    s = pd.Series(series)
+    numeric = pd.to_numeric(s, errors="coerce")
+    is_whole_float = numeric.notna() & (numeric % 1 == 0)
+    result = s.astype("string").fillna("").str.strip()
+    if is_whole_float.any():
+        result[is_whole_float] = numeric[is_whole_float].astype("Int64").astype("string")
+    return result
 
 
 def idx_for(cols_with_none: List[str], colname: Optional[str]) -> int:

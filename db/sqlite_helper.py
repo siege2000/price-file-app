@@ -75,8 +75,8 @@ def new_guid() -> str:
 
 
 def _dt(dt: datetime) -> str:
-    """SQLite stores datetimes as ISO text."""
-    return dt.isoformat(sep=" ", timespec="seconds")
+    """SQLite stores dates as ISO text (date only, no time component)."""
+    return dt.strftime("%Y-%m-%d")
 
 
 # ── Supplier queries ──────────────────────────────────────────────────────────

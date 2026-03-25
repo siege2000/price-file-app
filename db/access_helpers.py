@@ -76,7 +76,7 @@ def save_to_details(export_df: pd.DataFrame, supplier_id: int, mark_updated: boo
         df["Outers"] = df["Outers"].where(df["Outers"] > 0, 1)
     else:
         df["Outers"] = 1
-    now = datetime.now()
+    now = datetime.now().date()
     df["Updated"] = bool(mark_updated)
     df["LastUpdated"] = now
     df["DateCreated"] = now
@@ -325,7 +325,7 @@ def upsert_details(
     else:
         df["Outers"] = 1
 
-    now = datetime.now()
+    now = datetime.now().date()
 
     # Build lookup dicts from existing records (one fetch, or use pre-fetched copy)
     existing = existing_df if existing_df is not None else load_supplier_details(supplier_id)
@@ -436,7 +436,7 @@ def replace_all_details(
         df["Outers"] = df["Outers"].where(df["Outers"] > 0, 1)
     else:
         df["Outers"] = 1
-    now = datetime.now()
+    now = datetime.now().date()
 
     insert_sql = """
         INSERT INTO Details

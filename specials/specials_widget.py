@@ -10,14 +10,14 @@ import os
 from datetime import date, datetime
 
 import pandas as pd
-from PyQt6.QtCore import Qt, QAbstractTableModel, QModelIndex, QThread, pyqtSignal, QDate
+from PyQt6.QtCore import Qt, QAbstractTableModel, QModelIndex, QSortFilterProxyModel, QThread, pyqtSignal, QDate
 from PyQt6.QtGui import QColor, QBrush
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
     QLabel, QPushButton, QComboBox, QCheckBox, QLineEdit,
     QFrame, QGroupBox, QSplitter, QTableView, QScrollArea,
     QAbstractItemView, QHeaderView, QSizePolicy, QDateEdit,
-    QMessageBox, QFileDialog,
+    QMessageBox, QFileDialog, QDialog,
 )
 
 from .specials_helpers import (
@@ -28,6 +28,7 @@ from .specials_helpers import (
     load_special_settings,
     save_special_settings,
 )
+from .stockcard_dialog import StockcardSearchDialog
 
 
 # ── Grid columns (mirrors VB6 vsImport column order) ─────────────────────────
@@ -124,6 +125,30 @@ class _Worker(QThread):
             self.error.emit(str(exc))
 
 
+# ── Save worker with row-level progress ───────────────────────────────────────
+class _SaveWorker(QThread):
+    finished = pyqtSignal(int)          # total rows saved
+    progress = pyqtSignal(int, int)     # (done, total)
+    error    = pyqtSignal(str)
+
+    def __init__(self, fn, *args, **kwargs):
+        super().__init__()
+        self._fn     = fn
+        self._args   = args
+        self._kwargs = kwargs
+
+    def run(self):
+        try:
+            result = self._fn(
+                *self._args,
+                **self._kwargs,
+                progress_callback=lambda done, total: self.progress.emit(done, total),
+            )
+            self.finished.emit(result)
+        except Exception as exc:
+            self.error.emit(str(exc))
+
+
 # ── Table model ───────────────────────────────────────────────────────────────
 class SpecialsModel(QAbstractTableModel):
     def __init__(self, df: pd.DataFrame, parent=None):
@@ -195,6 +220,13 @@ class SpecialsModel(QAbstractTableModel):
     def dataFrame(self) -> pd.DataFrame:
         return self._df.copy()
 
+    def setCellValue(self, row: int, col_name: str, value: str):
+        if col_name in self._df.columns and 0 <= row < len(self._df):
+            self._df.at[row, col_name] = value
+            ci = list(self._df.columns).index(col_name)
+            idx = self.index(row, ci)
+            self.dataChanged.emit(idx, idx)
+
     def addBlankRow(self):
         self.beginInsertRows(QModelIndex(), len(self._df), len(self._df))
         blank = pd.DataFrame([{c: "" for c in self._df.columns}])
@@ -213,6 +245,19 @@ class SpecialsModel(QAbstractTableModel):
 def _empty_model() -> SpecialsModel:
     df = pd.DataFrame(columns=SPECIALS_COLUMNS)
     return SpecialsModel(df)
+
+
+class _BlanksFirstProxyModel(QSortFilterProxyModel):
+    """Sort proxy that always places blank/empty values before non-blank ones."""
+
+    def lessThan(self, left: QModelIndex, right: QModelIndex) -> bool:
+        l_val = (self.sourceModel().data(left,  Qt.ItemDataRole.DisplayRole) or "").strip()
+        r_val = (self.sourceModel().data(right, Qt.ItemDataRole.DisplayRole) or "").strip()
+        if l_val == "" and r_val != "":
+            return True   # blank sorts before non-blank
+        if l_val != "" and r_val == "":
+            return False  # non-blank sorts after blank
+        return l_val < r_val
 
 
 def _make_table_view() -> QTableView:
@@ -244,6 +289,7 @@ class SpecialsWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._model          = _empty_model()
+        self._proxy          = _BlanksFirstProxyModel()
         self._saved_settings : dict = {}   # last-loaded brand settings
         self._raw_file_df   : pd.DataFrame | None = None   # parsed file before mapping
         self._file_columns  : list[str] = []               # column headers from imported file
@@ -296,7 +342,9 @@ class SpecialsWidget(QWidget):
         left_v.setContentsMargins(0, 0, 4, 0)
         left_v.addWidget(QLabel("<b>Import Grid</b>"))
         self._grid = _make_table_view()
-        self._grid.setModel(self._model)
+        self._proxy.setSourceModel(self._model)
+        self._grid.setModel(self._proxy)
+        self._grid.setSortingEnabled(True)
         self._grid.resizeColumnsToContents()
         left_v.addWidget(self._grid)
         self._lbl_lines = QLabel("")
@@ -452,17 +500,66 @@ class SpecialsWidget(QWidget):
         self._btn_save.clicked.connect(self._do_save)
 
         self._btn_find_barcode = QPushButton("Open Stockcards (get barcode/pharmacode)…")
-        self._btn_find_barcode.clicked.connect(self._stub)
+        self._btn_find_barcode.clicked.connect(self._open_stockcard_search)
+
+        self._lbl_save_progress = QLabel("")
+        self._lbl_save_progress.setStyleSheet("font-size: 11px; color: #155724; padding: 1px 4px;")
 
         btn_bar.addWidget(self._btn_import)
         btn_bar.addWidget(self._btn_save)
         btn_bar.addWidget(self._btn_find_barcode)
+        btn_bar.addWidget(self._lbl_save_progress)
         btn_bar.addStretch()
         root.addLayout(btn_bar)
 
     # ─── Stubs ────────────────────────────────────────────────────────────────
     def _stub(self):
         self.status_message.emit("Not yet implemented.")
+
+    # ─── Proxy / model helpers ────────────────────────────────────────────────
+    def _set_grid_model(self, model: SpecialsModel, resize: bool = False):
+        """Replace the source model and keep the proxy/grid in sync."""
+        self._model = model
+        self._proxy.setSourceModel(model)
+        if resize:
+            self._grid.resizeColumnsToContents()
+
+    def _source_rows_from_selection(self) -> list[int]:
+        """Return unique source-model row indices for the current selection, sorted descending."""
+        return sorted(
+            {self._proxy.mapToSource(idx).row() for idx in self._grid.selectedIndexes()},
+            reverse=True,
+        )
+
+    # ─── Stockcard barcode lookup ─────────────────────────────────────────────
+    def _open_stockcard_search(self):
+        selected = self._grid.selectionModel().selectedRows()
+        proxy_idx = selected[0] if selected else self._grid.currentIndex()
+        row = self._proxy.mapToSource(proxy_idx).row()
+        df = self._model.dataFrame()
+        if row < 0 or row >= len(df):
+            QMessageBox.information(
+                self, "No Row Selected",
+                "Please select a row in the grid first, then click this button."
+            )
+            return
+        desc = str(df.iloc[row].get("Description", "")).strip()
+        dlg = StockcardSearchDialog(initial_description=desc, parent=self)
+        if dlg.exec() != QDialog.DialogCode.Accepted:
+            return
+        barcode = dlg.selected_barcode
+        if barcode:
+            self._model.setCellValue(row, "Barcode", barcode)
+            self.status_message.emit(
+                f"Row {row + 1}: barcode set to {barcode}."
+            )
+        else:
+            # No barcode but has pharmacode — warn user
+            QMessageBox.information(
+                self, "No Barcode",
+                f"The selected stock item has no barcode.\n"
+                f"Pharmacode: {dlg.selected_pharmacode or '(none)'}"
+            )
 
     # ─── Brand loading ────────────────────────────────────────────────────────
     def _load_brands(self):
@@ -756,11 +853,16 @@ class SpecialsWidget(QWidget):
 
         rows = []
         for i in range(len(raw)):
-            # ── Barcode: first value if comma-separated ───────────────────────
+            # ── Barcode: store all comma-separated values joined with comma ──
             barcode = clean(str(barcode_s.iloc[i]))
             if "," in barcode:
-                barcode = barcode.split(",")[0].strip()
-            barcode = barcode.replace('"', '').replace(' ', '')
+                barcode = ",".join(
+                    b.replace('"', '').replace(' ', '')
+                    for b in barcode.split(",")
+                    if b.strip()
+                )
+            else:
+                barcode = barcode.replace('"', '').replace(' ', '')
 
             desc = clean(str(desc_s.iloc[i]))[:40]
 
@@ -830,7 +932,7 @@ class SpecialsWidget(QWidget):
             row["Get Lowest Free"] = lowest_free
             row["New"]             = "Y"
             row["Changed"]         = "N"
-            row["Invalid"]         = "N" if barcode else "Y"
+            row["Invalid"]         = "N"
             row["POS Note"]        = clean(str(posnote_s.iloc[i]))
             row["Flybuys"]         = flybuys
             row["Group ID"]        = group_id
@@ -838,9 +940,7 @@ class SpecialsWidget(QWidget):
             rows.append(row)
 
         df = pd.DataFrame(rows, columns=SPECIALS_COLUMNS)
-        self._model = SpecialsModel(df)
-        self._grid.setModel(self._model)
-        self._grid.resizeColumnsToContents()
+        self._set_grid_model(SpecialsModel(df), resize=True)
         self._update_line_count()
         invalid_count = (df["Invalid"] == "Y").sum()
         self.status_message.emit(
@@ -871,32 +971,40 @@ class SpecialsWidget(QWidget):
         password = self._txt_password.text().strip()
 
         self._btn_save.setEnabled(False)
+        self._lbl_save_progress.setText("Saving…")
         self.status_message.emit("Saving…")
 
-        def _do():
+        def _do(progress_callback=None):
             sid = get_special_id(special_name, brand_id, create_new=True)
             return save_specials(grid_df, sid, start, finish, password,
-                                 clear_existing=True)
+                                 clear_existing=True,
+                                 progress_callback=progress_callback)
 
         self._write_in_progress = True
-        self._worker = _Worker(_do)
+        self._worker = _SaveWorker(_do)
+        self._worker.progress.connect(self._on_save_progress)
         self._worker.finished.connect(self._on_save_done)
         self._worker.error.connect(self._on_save_error)
         self._worker.start()
 
+    def _on_save_progress(self, done: int, total: int):
+        self._lbl_save_progress.setText(f"Saving {done} of {total}…")
+        self.status_message.emit(f"Saving {done} of {total}…")
+
     def _on_save_done(self, saved: int):
         self._write_in_progress = False
         self._btn_save.setEnabled(True)
+        self._lbl_save_progress.setText("")
         self.status_message.emit(f"Saved {saved} row(s) to database.")
         QMessageBox.information(self, "Saved", f"{saved} row(s) saved successfully.")
         # Clear the import grid after a successful save
-        self._model = _empty_model()
-        self._grid.setModel(self._model)
+        self._set_grid_model(_empty_model())
         self._raw_file_df = None
 
     def _on_save_error(self, msg: str):
         self._write_in_progress = False
         self._btn_save.setEnabled(True)
+        self._lbl_save_progress.setText("")
         self.status_message.emit(f"Save error: {msg}")
         QMessageBox.critical(self, "Save Error", msg)
 
@@ -930,9 +1038,7 @@ class SpecialsWidget(QWidget):
                 if col not in df.columns:
                     df[col] = ""
             df = df[SPECIALS_COLUMNS]
-            self._model = SpecialsModel(df)
-            self._grid.setModel(self._model)
-            self._grid.resizeColumnsToContents()
+            self._set_grid_model(SpecialsModel(df), resize=True)
             self._update_line_count()
             self.status_message.emit(f"Grid loaded from {os.path.basename(path)}.")
         except Exception as e:
@@ -1010,11 +1116,7 @@ class SpecialsWidget(QWidget):
         self._update_line_count()
 
     def _delete_selected(self):
-        rows = sorted(
-            {idx.row() for idx in self._grid.selectedIndexes()},
-            reverse=True,
-        )
-        for r in rows:
+        for r in self._source_rows_from_selection():
             self._model.removeRow(r)
         self._update_line_count()
 
@@ -1022,7 +1124,7 @@ class SpecialsWidget(QWidget):
         df = self._model.dataFrame()
         if "POS Note" not in df.columns:
             return
-        selected_rows = {idx.row() for idx in self._grid.selectedIndexes()}
+        selected_rows = {self._proxy.mapToSource(idx).row() for idx in self._grid.selectedIndexes()}
         if not selected_rows:
             return
         col_idx = list(df.columns).index("POS Note")
@@ -1040,8 +1142,7 @@ class SpecialsWidget(QWidget):
             return
         df["_sort"] = df["Invalid"].apply(lambda v: 0 if str(v) == "Y" else 1)
         df = df.sort_values("_sort").drop(columns=["_sort"]).reset_index(drop=True)
-        self._model = SpecialsModel(df)
-        self._grid.setModel(self._model)
+        self._set_grid_model(SpecialsModel(df))
         self._update_line_count()
 
     # ─── Log invalid items ────────────────────────────────────────────────────

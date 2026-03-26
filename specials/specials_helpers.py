@@ -126,6 +126,7 @@ def save_specials(
     finish_date: date,
     password: str = "",
     clear_existing: bool = True,
+    progress_callback=None,
 ) -> int:
     """
     Write grid rows to SpecialItems for the given special_id.
@@ -138,6 +139,7 @@ def save_specials(
     # Skip invalid rows
     inv_col = grid_df.get("Invalid", pd.Series(["N"] * len(grid_df)))
     df = grid_df[inv_col.fillna("N").str.upper() != "Y"].copy()
+    total = len(df)
 
     with get_access_conn() as conn:
         cur = conn.cursor()
@@ -168,7 +170,7 @@ def save_specials(
             group_id       = str(r.get("Group ID", "") or "").strip()
             pos_note       = str(r.get("POS Note", "") or "").strip()
             gift_barcode   = str(r.get("Gift Barcode", "") or "").strip()
-            gift_pharmacode = str(r.get("Gift Pharmacode", "") or "").strip()
+            gift_pharmacode = str(r.get("Gift Pharmacode", "") or "").strip() or "False"
             msg_is_q       = _is_yes(r.get("Msg Is Question", ""))
             deal_name      = str(r.get("Deal Name", "") or "").strip()
             secondary_gid  = str(r.get("Secondary Group ID", "") or "").strip()
@@ -212,6 +214,8 @@ def save_specials(
                     ),
                 )
             saved += 1
+            if progress_callback:
+                progress_callback(saved, total)
 
         # Optional password update
         if password:

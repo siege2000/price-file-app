@@ -15,6 +15,10 @@ DEFAULTS = {
     "SQLite": {
         "db_path": "suppliers.sqlite",
     },
+    "MSSQL": {
+        "server": r"SUPPORT0630\HEALTHSOFTLOTS",
+        "database": "",
+    },
 }
 
 
@@ -69,6 +73,14 @@ def get_access_password() -> str:
 
 def get_sqlite_path() -> str:
     return load().get("SQLite", "db_path", fallback=DEFAULTS["SQLite"]["db_path"])
+
+
+def get_mssql_server() -> str:
+    return load().get("MSSQL", "server", fallback=DEFAULTS["MSSQL"]["server"])
+
+
+def get_mssql_database() -> str:
+    return load().get("MSSQL", "database", fallback=DEFAULTS["MSSQL"]["database"])
 
 
 # ── Setters ───────────────────────────────────────────────────────────────────

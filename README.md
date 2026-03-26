@@ -91,14 +91,22 @@ On first run, a `settings.ini` file is created automatically in the application 
 [Access]
 mdb_path = suppliers.mdb
 password = YOUR_PASSWORD_HERE
+settings1_mdb_path = Settings1.mdb
 
 [SQLite]
 db_path = suppliers.sqlite
+
+[MSSQL]
+server = SUPPORT0630\HEALTHSOFTLOTS
+database = lotssql
 ```
 
 - **`mdb_path`** — path to `suppliers.mdb`. Can be absolute (`C:\Data\suppliers.mdb`) or a UNC path (`\\server\share\suppliers.mdb`).
 - **`password`** — the Access database password.
+- **`settings1_mdb_path`** — path to `Settings1.mdb` (find/replace rules source).
 - **`db_path`** — path to the SQLite fallback database (if used).
+- **`server`** — SQL Server instance for the Healthsoft stock database (used by the Specials barcode lookup).
+- **`database`** — database name on that SQL Server instance.
 
 Edit `settings.ini` in any text editor, or use the Settings panel within the desktop app.
 
@@ -142,15 +150,89 @@ This provides the same core price-file workflow in a web UI, accessible at `http
 |------|---------|
 | `qt_app.py` | PyQt6 desktop application (main entry point) |
 | `app.py` | Streamlit web application |
-| `access_helpers.py` | Access database read/write operations |
-| `sqlite_helper.py` | SQLite equivalent of access_helpers |
-| `file_helpers.py` | CSV/Excel loading and template parsing |
-| `column_helpers.py` | Column mapping and default detection |
-| `description_helpers.py` | TradeName building, cleaning, unit normalisation |
-| `editing_helpers.py` | Money parsing, find/replace rule application |
 | `config.py` | Read/write `settings.ini` |
-| `specials_widget.py` | Specials file editor (separate workflow) |
-| `templates.json` | Column mapping templates per supplier type |
-| `supplier_settings.json` | Saved per-supplier column/layout settings |
-| `supplier_rules.json` | Per-supplier TradeName shortening rules |
-| `settings.ini` | Local database path and credentials (not committed) |
+| `price_file_app.spec` | PyInstaller build spec (see Distribution below) |
+| **`db/`** | |
+| `db/access_helpers.py` | Access database read/write operations |
+| `db/sqlite_helper.py` | SQLite equivalent of access_helpers |
+| **`processing/`** | |
+| `processing/file_helpers.py` | CSV/Excel loading and template parsing |
+| `processing/column_helpers.py` | Column mapping and default detection |
+| `processing/description_helpers.py` | TradeName building, cleaning, unit normalisation |
+| `processing/editing_helpers.py` | Money parsing, find/replace rule application |
+| **`specials/`** | |
+| `specials/specials_widget.py` | Specials file import UI (separate workflow) |
+| `specials/specials_helpers.py` | Specials Access DB read/write operations |
+| `specials/stockcard_dialog.py` | MSSQL stock barcode lookup dialog |
+| `specials/brand_import_mappings.json` | Per-brand column mapping rules for specials import |
+| **`data/`** | |
+| `data/templates.json` | Column mapping templates per supplier type |
+| `data/supplier_settings.json` | Saved per-supplier column/layout settings |
+| `data/supplier_rules.json` | Per-supplier TradeName shortening rules |
+| `data/replacements.csv` | Global description replacement reference |
+| `settings.ini` | Local database paths and credentials (not committed) |
+
+---
+
+## Distribution — Building a Windows Executable
+
+The app can be packaged into a self-contained Windows executable using [PyInstaller](https://pyinstaller.org). No Python installation is required on the target machine.
+
+### Prerequisites (build machine only)
+
+```bash
+pip install pyinstaller
+```
+
+### Build
+
+```bash
+pyinstaller price_file_app.spec
+```
+
+Output is placed in `dist\PriceFileApp\`.
+
+### Assemble the distribution folder
+
+PyInstaller does not copy writable data files. After the build, copy these into `dist\PriceFileApp\`:
+
+```
+dist\PriceFileApp\
+  PriceFileApp.exe        ← built by PyInstaller
+  _internal\              ← PyInstaller internals (do not modify)
+  settings.ini            ← copy from project root, edit for the target site
+  data\                   ← copy entire folder from project root
+    templates.json
+    supplier_rules.json
+    supplier_settings.json
+    replacements.csv
+```
+
+Edit `settings.ini` for the target site before shipping:
+
+```ini
+[Access]
+mdb_path = \\server\share\Suppliers.mdb
+password = YOUR_PASSWORD
+
+[MSSQL]
+server = SUPPORT0630\HEALTHSOFTLOTS
+database = lotssql
+```
+
+### Target machine requirements
+
+| Requirement | Notes |
+|---|---|
+| Windows 10 / 11 | 64-bit |
+| Microsoft Access Database Engine (64-bit) | Required for `.mdb` connectivity — download from Microsoft |
+| SQL Server ODBC Driver | The `{SQL Server}` driver ships with Windows; usually already present |
+
+### Notes
+
+| | |
+|---|---|
+| **Startup time** | First launch may take 3–5 seconds while Windows loads the bundled DLLs — normal behaviour |
+| **Antivirus** | Some AV software flags unsigned PyInstaller executables. Code-signing with a certificate resolves this |
+| **Icon** | Uncomment the `icon=` line in `price_file_app.spec` and supply a `.ico` file to brand the executable |
+| **Rebuilding** | Always use `pyinstaller price_file_app.spec` — do not run `pyinstaller qt_app.py` as that bypasses the spec settings |

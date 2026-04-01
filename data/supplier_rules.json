@@ -724,5 +724,63 @@
       "from": "Multivitamin",
       "to": "M/Vit"
     }
+  ],
+  "453": [
+    {
+      "from": "Adhesive",
+      "to": "Adh"
+    },
+    {
+      "from": "Cream",
+      "to": "Crm"
+    },
+    {
+      "from": "Nasal Spray",
+      "to": "N/Spry"
+    },
+    {
+      "from": "New",
+      "to": ""
+    },
+    {
+      "from": "Repack",
+      "to": ""
+    },
+    {
+      "from": "Tablets",
+      "to": "T's"
+    }
+  ],
+  "11": [
+    {
+      "from": "Christina Aguilera",
+      "to": "CA"
+    },
+    {
+      "from": "Ceramide",
+      "to": "CRMD"
+    },
+    {
+      "from": "Advanced",
+      "to": "Adv"
+    },
+    {
+      "from": "Fragrance",
+      "to": "Frag"
+    },
+    {
+      "from": "Multi-Restorative",
+      "to": "M-Rest"
+    },
+    {
+      "from": "Capsules",
+      "to": "Caps"
+    }
+  ],
+  "92": [
+    {
+      "from": "Glamuzina",
+      "to": "Glam"
+    }
   ]
 }

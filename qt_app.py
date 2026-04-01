@@ -114,6 +114,13 @@ class PandasModel(QAbstractTableModel):
             return str(self._df.columns[section])
         return str(section + 1)
 
+    def sort(self, column: int, order=Qt.SortOrder.AscendingOrder):
+        self.layoutAboutToBeChanged.emit()
+        col_name = self._df.columns[column]
+        ascending = (order == Qt.SortOrder.AscendingOrder)
+        self._df = self._df.sort_values(by=col_name, ascending=ascending, kind="stable").reset_index(drop=True)
+        self.layoutChanged.emit()
+
     def dataFrame(self) -> pd.DataFrame:
         return self._df.copy()
 
@@ -246,8 +253,9 @@ class UpsertWorker(QThread):
 
 
 class ReplaceWorker(QThread):
-    done = pyqtSignal(int)   # rows inserted
+    done = pyqtSignal(int)        # rows inserted
     error = pyqtSignal(str)
+    progress = pyqtSignal(int, int)  # (done, total)
 
     def __init__(self, export_df: pd.DataFrame, supplier_id: int, mark_updated: bool):
         super().__init__()
@@ -258,7 +266,8 @@ class ReplaceWorker(QThread):
     def run(self):
         try:
             inserted = replace_all_details(
-                self.export_df, self.supplier_id, mark_updated=self.mark_updated
+                self.export_df, self.supplier_id, mark_updated=self.mark_updated,
+                progress_callback=self.progress.emit,
             )
             self.done.emit(inserted)
         except Exception as e:
@@ -1500,6 +1509,7 @@ class PriceFileWidget(QWidget):
         )
         self._preview_table.setModel(self._preview_model)
         self._preview_table.setItemDelegate(CursorPlacingDelegate(self._preview_table))
+        self._preview_table.setSortingEnabled(True)
         self._preview_table.resizeColumnsToContents()
         if "New_Description" in df.columns:
             idx = list(df.columns).index("New_Description")
@@ -1854,7 +1864,11 @@ class PriceFileWidget(QWidget):
         )
         self._replace_worker.done.connect(self._on_replace_done)
         self._replace_worker.error.connect(self._on_replace_error)
+        self._replace_worker.progress.connect(self._on_replace_progress)
         self._replace_worker.start()
+
+    def _on_replace_progress(self, done: int, total: int):
+        self._btn_replace_all.setText(f"Replacing… {done} / {total}")
 
     def _on_replace_done(self, inserted: int):
         self._btn_replace_all.setEnabled(True)

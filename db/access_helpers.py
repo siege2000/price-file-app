@@ -418,10 +418,14 @@ def replace_all_details(
     export_df: pd.DataFrame,
     supplier_id: int,
     mark_updated: bool = True,
+    progress_callback=None,
+    chunk_size: int = 100,
 ) -> int:
     """
     Delete ALL existing Details records for supplier_id, then insert export_df fresh.
     Returns the number of rows inserted.
+    If progress_callback is provided it is called as callback(done: int, total: int)
+    after each chunk is inserted.
     """
     df = export_df.copy()
     df["SupplierID"] = int(supplier_id)
@@ -456,15 +460,20 @@ def replace_all_details(
                       "Cost", "Retail", "Barcode", "Outers"]].itertuples(index=False)
     ]
 
+    total = len(rows)
     with get_access_conn() as conn:
         cur = conn.cursor()
         cur.execute("DELETE FROM Details WHERE SupplierID = ?", (int(supplier_id),))
         cur.fast_executemany = False
-        cur.executemany(insert_sql, rows)
+        for start in range(0, total, chunk_size):
+            chunk = rows[start:start + chunk_size]
+            cur.executemany(insert_sql, chunk)
+            if progress_callback is not None:
+                progress_callback(min(start + chunk_size, total), total)
         cur.execute(
             "UPDATE Suppliers SET LastUpdated = ? WHERE SupplierID = ?",
             (now, int(supplier_id)),
         )
         conn.commit()
 
-    return len(rows)
+    return total

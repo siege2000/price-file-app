@@ -99,47 +99,55 @@
     }
   },
   "561": {
-    "template": "Toniq",
-    "skip_rows": 3,
-    "columns": {
-      "plu": "(None)",
-      "pharmacode": "Unnamed: 2",
-      "retail": "(None)",
-      "cost": "Unnamed: 3",
-      "barcode": "(None)",
-      "sc": "(None)",
-      "outer": "(None)"
-    },
-    "description": {
-      "columns": [
-        "Vantage March 2026 Gold Monthly Price List "
-      ],
-      "prefix": "",
-      "separator": " ",
-      "title_case": true,
-      "normalize_units": true
+    "sheets": {
+      "_default": {
+        "template": "Toniq",
+        "skip_rows": 3,
+        "columns": {
+          "plu": "(None)",
+          "pharmacode": "Unnamed: 2",
+          "retail": "(None)",
+          "cost": "Unnamed: 3",
+          "barcode": "(None)",
+          "sc": "(None)",
+          "outer": "(None)"
+        },
+        "description": {
+          "columns": [
+            "Vantage April 2026 Gold Monthly Price List "
+          ],
+          "prefix": "",
+          "separator": " ",
+          "title_case": true,
+          "normalize_units": true
+        }
+      }
     }
   },
   "18": {
-    "template": "Toniq",
-    "skip_rows": 3,
-    "columns": {
-      "plu": "(None)",
-      "pharmacode": "Unnamed: 2",
-      "retail": "Unnamed: 3",
-      "cost": "Unnamed: 3",
-      "barcode": "(None)",
-      "sc": "Unnamed: 2",
-      "outer": "(None)"
-    },
-    "description": {
-      "columns": [
-        "Vantage March 2026 Gold Monthly Price List "
-      ],
-      "prefix": "",
-      "separator": " ",
-      "title_case": true,
-      "normalize_units": true
+    "sheets": {
+      "_default": {
+        "template": "Toniq",
+        "skip_rows": 3,
+        "columns": {
+          "plu": "(None)",
+          "pharmacode": "Unnamed: 2",
+          "retail": "(None)",
+          "cost": "Unnamed: 3",
+          "barcode": "(None)",
+          "sc": "Unnamed: 2",
+          "outer": "(None)"
+        },
+        "description": {
+          "columns": [
+            "Vantage April 2026 Gold Monthly Price List "
+          ],
+          "prefix": "",
+          "separator": " ",
+          "title_case": true,
+          "normalize_units": true
+        }
+      }
     }
   },
   "104": {
@@ -289,6 +297,87 @@
           "prefix": "Nutricom",
           "separator": " ",
           "title_case": false,
+          "normalize_units": true
+        }
+      }
+    }
+  },
+  "11": {
+    "sheets": {
+      "_default": {
+        "template": "Toniq",
+        "skip_rows": 12,
+        "columns": {
+          "plu": "(None)",
+          "pharmacode": "(None)",
+          "retail": "Unnamed: 5",
+          "cost": "Unnamed: 6",
+          "barcode": "Unnamed: 4",
+          "sc": "Unnamed: 0",
+          "outer": "(None)"
+        },
+        "description": {
+          "columns": [
+            "Unnamed: 3"
+          ],
+          "prefix": "EA",
+          "separator": " ",
+          "title_case": true,
+          "normalize_units": true
+        }
+      }
+    }
+  },
+  "138": {
+    "sheets": {
+      "_default": {
+        "template": "Toniq",
+        "skip_rows": 5,
+        "columns": {
+          "plu": "Pharmacode",
+          "pharmacode": "(None)",
+          "retail": "(None)",
+          "cost": "CTC",
+          "barcode": "Bar Code",
+          "sc": "Pharmacode",
+          "outer": "(None)"
+        },
+        "description": {
+          "columns": [
+            "Description"
+          ],
+          "prefix": "",
+          "separator": " ",
+          "title_case": true,
+          "normalize_units": true
+        }
+      }
+    }
+  },
+  "92": {
+    "sheets": {
+      "Toniq Product Spreadsheet": {
+        "template": "Toniq",
+        "skip_rows": 0,
+        "columns": {
+          "plu": "(None)",
+          "pharmacode": "(None)",
+          "retail": "RRP (incl GST)",
+          "cost": "Cost Price (List cost or Wholesale cost) excl GST",
+          "barcode": "Barcode",
+          "sc": "Supplier Code (Product Code)",
+          "outer": "(None)"
+        },
+        "description": {
+          "columns": [
+            "Brand",
+            "Product Name",
+            "Size (Net Content)",
+            "Unit of Measure"
+          ],
+          "prefix": "",
+          "separator": " ",
+          "title_case": true,
           "normalize_units": true
         }
       }

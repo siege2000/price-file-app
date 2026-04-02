@@ -7,6 +7,12 @@ from app_specials import render_specials
 
 st.set_page_config(layout="wide", page_title="Price File Builder")
 
+st.warning(
+    "⚠️ **This Streamlit app is still in testing.** "
+    "Please use a test database — do not connect to a live production database.",
+    icon=None,
+)
+
 render_settings_sidebar()
 
 mode = st.radio(

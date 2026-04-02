@@ -9,15 +9,15 @@
 
     body {
       font-family: 'Segoe UI', Arial, sans-serif;
-      background: #f5f7fa;
-      color: #333;
+      background: #f4f5fb;
+      color: #1e1b4b;
       font-size: 15px;
       line-height: 1.65;
     }
 
     /* ── Header ──────────────────────────────────────── */
     header {
-      background: #1a3c5e;
+      background: linear-gradient(135deg, #1a1740 0%, #3730a3 100%);
       color: #fff;
       padding: 32px 48px;
     }
@@ -58,9 +58,11 @@
       transition: background 0.15s, color 0.15s;
     }
     nav a:hover, nav a.active {
-      background: #e8f0fa;
-      color: #1a3c5e;
+      background: #ede9fe;
+      color: #1e1b4b;
       font-weight: 600;
+      border-left: 3px solid #f0a500;
+      padding-left: 9px;
     }
 
     /* ── Main content ────────────────────────────────── */
@@ -78,16 +80,16 @@
 
     h2 {
       font-size: 20px;
-      color: #1a3c5e;
+      color: #1e1b4b;
       margin-bottom: 16px;
       padding-bottom: 10px;
-      border-bottom: 2px solid #e8f0fa;
+      border-bottom: 2px solid #f0a500;
     }
 
     h3 {
       font-size: 15px;
       font-weight: 600;
-      color: #2d6a9f;
+      color: #3730a3;
       margin: 22px 0 8px;
     }
     h3:first-of-type { margin-top: 4px; }
@@ -110,15 +112,15 @@
       width: 28px;
       height: 28px;
       border-radius: 50%;
-      background: #2d6a9f;
-      color: #fff;
+      background: #f0a500;
+      color: #1a1740;
       font-size: 13px;
       font-weight: 700;
       display: flex;
       align-items: center;
       justify-content: center;
     }
-    .step-text strong { display: inline; font-weight: 600; color: #1a3c5e; }
+    .step-text strong { display: inline; font-weight: 600; color: #1e1b4b; }
     .step-text span { font-size: 14px; color: #555; display: block; margin-top: 3px; }
 
     /* ── Bullet list ─────────────────────────────────── */
@@ -147,7 +149,7 @@
       align-items: flex-start;
     }
     .tip  { background: #e8f5e9; border-left: 4px solid #43a047; color: #2e7d32; }
-    .note { background: #e8f0fa; border-left: 4px solid #2d6a9f; color: #1a3c5e; }
+    .note { background: #ede9fe; border-left: 4px solid #3730a3; color: #1e1b4b; }
     .warn { background: #fff8e1; border-left: 4px solid #f9a825; color: #6d4c00; }
     .tip .icon, .note .icon, .warn .icon { flex-shrink: 0; font-size: 16px; }
 
@@ -168,7 +170,7 @@
     .faq-item { margin-bottom: 20px; }
     .faq-item .q {
       font-weight: 600;
-      color: #1a3c5e;
+      color: #1e1b4b;
       margin-bottom: 6px;
     }
     .faq-item .a { font-size: 14px; color: #444; }

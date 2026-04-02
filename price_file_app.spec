@@ -4,6 +4,10 @@
 #   pyinstaller price_file_app.spec
 #
 # Output:  dist/PriceFileApp/PriceFileApp.exe
+#
+# Version format: YYYY.MM.N  (year, month, release number for that month)
+
+APP_VERSION = '2026.04.01'
 
 block_cipher = None
 
@@ -78,7 +82,8 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    # icon='icon.ico',
+    icon='icon.ico',
+    version_file='version_info.txt',
 )
 
 coll = COLLECT(

@@ -16,17 +16,13 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[
-        # Config shipped with the app — destination '.' = top-level dist folder
-        ('settings.ini',                        '.'),
-        # Help page
-        ('help.html',                           '.'),
-        # Data folder — JSON configs + replacements CSV
-        ('data/supplier_rules.json',            'data'),
-        ('data/supplier_settings.json',         'data'),
-        ('data/templates.json',                 'data'),
-        ('data/replacements.csv',               'data'),
-        # Specials module config (read via __file__ at runtime)
+        # Specials module config — resolved via __file__ at runtime, must be
+        # bundled into _internal/specials/ alongside the frozen module.
         ('specials/brand_import_mappings.json', 'specials'),
+        # Note: settings.ini, help.html and the data/ folder are NOT bundled
+        # here because the app resolves them relative to the exe directory
+        # (os.path.dirname(sys.executable)).  Copy those manually after the
+        # build — see the README Distribution section.
     ],
     hiddenimports=[
         'pyodbc',

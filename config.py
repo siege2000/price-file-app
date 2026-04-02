@@ -2,9 +2,22 @@
 from __future__ import annotations
 
 import os
+import sys
 import configparser
 
 SETTINGS_FILE = "settings.ini"
+
+
+def base_path() -> str:
+    """Return the root directory for all app data files.
+
+    Frozen (PyInstaller exe): the folder containing PriceFileApp.exe —
+      this is where settings.ini, help.html and the data/ folder live.
+    Source (dev): the project root (directory containing config.py).
+    """
+    if getattr(sys, "frozen", False):
+        return os.path.dirname(sys.executable)
+    return os.path.dirname(os.path.abspath(__file__))
 
 DEFAULTS = {
     "Access": {
@@ -23,7 +36,7 @@ DEFAULTS = {
 
 
 def _settings_path() -> str:
-    return os.path.join(os.getcwd(), SETTINGS_FILE)
+    return os.path.join(base_path(), SETTINGS_FILE)
 
 
 def load() -> configparser.ConfigParser:

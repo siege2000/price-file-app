@@ -38,8 +38,9 @@ from db import sqlite_helper
 import config
 from specials.specials_widget import SpecialsWidget
 
-SUPPLIER_SETTINGS_FILE = "data/supplier_settings.json"
-SUPPLIER_RULES_FILE = "data/supplier_rules.json"
+import os as _os
+SUPPLIER_SETTINGS_FILE = _os.path.join(config.base_path(), "data", "supplier_settings.json")
+SUPPLIER_RULES_FILE    = _os.path.join(config.base_path(), "data", "supplier_rules.json")
 
 
 # ── Pandas ↔ Qt model ────────────────────────────────────────────────────────
@@ -860,13 +861,13 @@ class PriceFileWidget(QWidget):
     # ─── Template + supplier loading ──────────────────────────────────────────
     def _load_templates(self):
         try:
-            self._templates = load_templates("data/templates.json")
+            self._templates = load_templates(_os.path.join(config.base_path(), "data", "templates.json"))
             self._cmb_template.blockSignals(True)
             self._cmb_template.clear()
             self._cmb_template.addItems(list(self._templates.keys()))
             self._cmb_template.blockSignals(False)
         except Exception as e:
-            QMessageBox.warning(self, "Templates", f"Could not load data/templates.json:\n{e}")
+            QMessageBox.warning(self, "Templates", f"Could not load templates.json:\n{e}")
 
     def _load_suppliers(self):
         try:
@@ -2198,13 +2199,6 @@ class MainWindow(QMainWindow):
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    # When frozen by PyInstaller, sys._MEIPASS is the _internal folder where
-    # all bundled files (data/, settings.ini, etc.) are placed.  Chdir there
-    # so every relative path in the app resolves correctly.
-    if getattr(sys, "frozen", False):
-        import os
-        os.chdir(sys._MEIPASS)
-
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
     win = MainWindow()

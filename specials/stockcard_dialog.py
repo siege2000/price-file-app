@@ -2,7 +2,7 @@
 """
 Opens from the "Open Stockcards" button in the specials grid.
 Pre-fills the search with the selected row's Description, queries
-SUPPORT0630\HEALTHSOFTLOTS (configured in settings.ini [MSSQL]),
+SUPPORT0630\\HEALTHSOFTLOTS (configured in settings.ini [MSSQL]),
 and writes the chosen Barcode back to the grid row.
 """
 from __future__ import annotations

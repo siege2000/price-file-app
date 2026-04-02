@@ -180,9 +180,16 @@ The app can be packaged into a self-contained Windows executable using [PyInstal
 
 ### Prerequisites (build machine only)
 
+Activate the virtual environment, then install PyInstaller:
+
 ```bash
+# Windows — activate venv first
+venv\Scripts\activate
+
 pip install pyinstaller
 ```
+
+> **Note:** PyInstaller is not in `requirements.txt` because it is only needed on the build machine, not the target machine.
 
 ### Build
 
@@ -191,6 +198,8 @@ pyinstaller price_file_app.spec
 ```
 
 Output is placed in `dist\PriceFileApp\`.
+
+> **Tip:** Always use `pyinstaller price_file_app.spec` — do **not** run `pyinstaller qt_app.py` as that bypasses the bundled data files and hidden-import settings in the spec.
 
 ### Assemble the distribution folder
 

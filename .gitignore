@@ -28,6 +28,10 @@ Thumbs.db
 exports/
 output/
 
+# PyInstaller build artefacts
+build/
+dist/
+
 # Bas Files
 *.bas
 *.frm

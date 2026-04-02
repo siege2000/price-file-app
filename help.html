@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Price File Builder — Help Guide</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f5f7fa;
+      color: #333;
+      font-size: 15px;
+      line-height: 1.65;
+    }
+
+    /* ── Header ──────────────────────────────────────── */
+    header {
+      background: #1a3c5e;
+      color: #fff;
+      padding: 32px 48px;
+    }
+    header h1 { font-size: 28px; font-weight: 700; }
+    header p  { opacity: 0.8; margin-top: 6px; font-size: 15px; }
+
+    /* ── Layout ─────────────────────────────────────── */
+    .layout {
+      display: flex;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 32px 80px;
+      gap: 40px;
+    }
+
+    /* ── Sidebar nav ─────────────────────────────────── */
+    nav {
+      flex-shrink: 0;
+      width: 210px;
+      position: sticky;
+      top: 24px;
+      align-self: flex-start;
+    }
+    nav h2 {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #888;
+      margin-bottom: 10px;
+    }
+    nav a {
+      display: block;
+      padding: 7px 12px;
+      border-radius: 5px;
+      text-decoration: none;
+      font-size: 14px;
+      color: #444;
+      transition: background 0.15s, color 0.15s;
+    }
+    nav a:hover, nav a.active {
+      background: #e8f0fa;
+      color: #1a3c5e;
+      font-weight: 600;
+    }
+
+    /* ── Main content ────────────────────────────────── */
+    article { flex: 1; min-width: 0; }
+
+    /* ── Section ─────────────────────────────────────── */
+    .section {
+      background: #fff;
+      border-radius: 8px;
+      border: 1px solid #e0e5ec;
+      padding: 32px 36px;
+      margin-bottom: 28px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    h2 {
+      font-size: 20px;
+      color: #1a3c5e;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e8f0fa;
+    }
+
+    h3 {
+      font-size: 15px;
+      font-weight: 600;
+      color: #2d6a9f;
+      margin: 22px 0 8px;
+    }
+    h3:first-of-type { margin-top: 4px; }
+
+    p { color: #444; margin-bottom: 12px; }
+    p:last-child { margin-bottom: 0; }
+
+    /* ── Steps ───────────────────────────────────────── */
+    .steps { margin: 0; padding: 0; list-style: none; }
+    .steps li {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      padding: 14px 0;
+      border-bottom: 1px solid #f0f3f8;
+    }
+    .steps li:last-child { border-bottom: none; }
+    .step-n {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #2d6a9f;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .step-text strong { display: inline; font-weight: 600; color: #1a3c5e; }
+    .step-text span { font-size: 14px; color: #555; display: block; margin-top: 3px; }
+
+    /* ── Bullet list ─────────────────────────────────── */
+    .bullet-list {
+      list-style: disc;
+      padding-left: 20px;
+      margin: 8px 0 4px;
+    }
+    .bullet-list li {
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 4px;
+      padding: 0;
+      border: none;
+      display: list-item;
+    }
+
+    /* ── Tips / Notes / Warnings ─────────────────────── */
+    .tip, .note, .warn {
+      border-radius: 6px;
+      padding: 12px 16px;
+      font-size: 14px;
+      margin: 14px 0;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .tip  { background: #e8f5e9; border-left: 4px solid #43a047; color: #2e7d32; }
+    .note { background: #e8f0fa; border-left: 4px solid #2d6a9f; color: #1a3c5e; }
+    .warn { background: #fff8e1; border-left: 4px solid #f9a825; color: #6d4c00; }
+    .tip .icon, .note .icon, .warn .icon { flex-shrink: 0; font-size: 16px; }
+
+    /* ── Key pill ────────────────────────────────────── */
+    kbd {
+      display: inline-block;
+      background: #f0f3f8;
+      border: 1px solid #cdd5e0;
+      border-bottom-width: 2px;
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-family: 'Consolas', monospace;
+      font-size: 13px;
+      color: #333;
+    }
+
+    /* ── FAQ ─────────────────────────────────────────── */
+    .faq-item { margin-bottom: 20px; }
+    .faq-item .q {
+      font-weight: 600;
+      color: #1a3c5e;
+      margin-bottom: 6px;
+    }
+    .faq-item .a { font-size: 14px; color: #444; }
+
+    /* ── Colour badges ───────────────────────────────── */
+    .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 700;
+      margin-right: 4px;
+    }
+    .badge.green  { background: #d4edda; color: #155724; }
+    .badge.amber  { background: #fff3cd; color: #856404; }
+    .badge.warn   { background: #f8d7da; color: #842029; }
+
+    footer {
+      text-align: center;
+      font-size: 12px;
+      color: #aaa;
+      padding: 20px;
+      border-top: 1px solid #e0e5ec;
+    }
+
+    @media (max-width: 750px) {
+      .layout { flex-direction: column; padding: 24px 16px; }
+      nav { width: 100%; position: static; }
+      .section { padding: 22px 18px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Price File Builder — Help Guide</h1>
+  <p>Step-by-step instructions for processing supplier price files</p>
+</header>
+
+<div class="layout">
+
+  <!-- ── Sidebar ──────────────────────────────────── -->
+  <nav>
+    <h2>Contents</h2>
+    <a href="#overview">What does it do?</a>
+    <a href="#workflow">Step-by-step guide</a>
+    <a href="#descriptions">Fixing descriptions</a>
+    <a href="#settings">Saving settings</a>
+    <a href="#specials">Specials files</a>
+    <a href="#faq">Common questions</a>
+    <a href="#tips">Tips &amp; shortcuts</a>
+  </nav>
+
+  <!-- ── Content ──────────────────────────────────── -->
+  <article>
+
+    <!-- OVERVIEW -->
+    <div class="section" id="overview">
+      <h2>What does the app do?</h2>
+      <p>The Price File Builder takes price files from suppliers (CSV or Excel) and loads them into the RxOne database (<strong>suppliers.mdb</strong>). It handles the column matching, description tidying, and database update — all without any manual SQL.</p>
+      <p>The app remembers your settings for each supplier, so after the first time the work is much faster.</p>
+      <div class="note">
+        <span class="icon">ℹ️</span>
+        <span>The app has two modes at the top: <strong>Price File</strong> (for regular supplier price updates) and <strong>Specials File</strong> (for specials promotions). This guide covers the Price File mode.</span>
+      </div>
+    </div>
+
+    <!-- STEP BY STEP -->
+    <div class="section" id="workflow">
+      <h2>Step-by-step: processing a price file</h2>
+
+      <ol class="steps">
+
+        <li>
+          <div class="step-n">1</div>
+          <div class="step-text">
+            <strong>Select the supplier</strong>
+            <span>Pick the supplier from the dropdown at the top right. The app will silently start loading their existing database records in the background — by the time you get to the preview step, it will already be ready.</span>
+          </div>
+        </li>
+
+        <li>
+          <div class="step-n">2</div>
+          <div class="step-text">
+            <strong>Open the price file</strong>
+            <span>Click <strong>Open File</strong> and browse to the supplier's CSV or Excel file. If the Excel file has more than one sheet, a window will ask you which sheet to use — pick the one with the product data.</span>
+          </div>
+        </li>
+
+        <li>
+          <div class="step-n">3</div>
+          <div class="step-text">
+            <strong>Check the column mappings</strong>
+            <span>On the right panel, check that the columns are mapped correctly (PLU, Pharmacode, Retail, Cost, etc.). For suppliers the app already knows, these will be pre-filled. If anything looks wrong, change the dropdowns to the correct columns from the file.</span>
+          </div>
+        </li>
+
+        <li>
+          <div class="step-n">4</div>
+          <div class="step-text">
+            <strong>Check the TradeName settings</strong>
+            <span>Scroll down the right panel to the TradeName section. Check which columns are being used to build the product description and whether title case and unit normalisation are turned on. Again, these will usually be set correctly for known suppliers.</span>
+          </div>
+        </li>
+
+        <li>
+          <div class="step-n">5</div>
+          <div class="step-text">
+            <strong>Click Build Output</strong>
+            <span>Click the <strong>Build Output</strong> button. The app processes the file, applies description rules, removes rows with no identifying code, and shows the processed rows. The row count is displayed at the bottom of the screen.</span>
+          </div>
+        </li>
+
+        <li>
+          <div class="step-n">6</div>
+          <div class="step-text">
+            <strong>Preview Changes</strong>
+            <span>Click <strong>Preview Changes</strong>. The app compares your processed output against what is already in the database and shows you exactly what will change. <span class="badge green">NEW</span> rows are records that don't exist yet. <span class="badge amber">UPDATE</span> rows will overwrite an existing record. Review the list and delete any rows you don't want to write by selecting them and pressing <kbd>Delete</kbd>.</span>
+          </div>
+        </li>
+
+        <li>
+          <div class="step-n">7</div>
+          <div class="step-text">
+            <strong>Fix any description warnings</strong>
+            <span>Rows where the description is over 40 characters are marked with <strong>⚠</strong>. You must fix these before writing to the database. See the <a href="#descriptions">Fixing descriptions</a> section below for how to do this quickly.</span>
+            <span>Where a description is over 40 characters it will be treated as follows:
+              <ul class="bullet-list">
+                <li>If it is a new product it must be fixed before it can be added to the suppliers price file</li>
+                <li>If it is an update to an existing product, the app will ignore the new description, and only update other details</li>
+              </ul>
+            </span>
+          </div>
+        </li>
+
+        <li>
+          <div class="step-n">8</div>
+          <div class="step-text">
+            <strong>Save settings (first time only)</strong>
+            <span>If this is the first time you've processed this supplier, click <strong>Save Settings</strong> to store the column mappings. They will be restored automatically next time.</span>
+          </div>
+        </li>
+
+        <li>
+          <div class="step-n">9</div>
+          <div class="step-text">
+            <strong>Write to the database</strong>
+            <span>Click <strong>Execute Upsert</strong> to write the data. The app will insert new records and update existing ones. A confirmation message shows how many rows were inserted and updated. If you want to completely replace all records for the supplier (not just update), use <strong>Replace All</strong> instead.</span>
+          </div>
+        </li>
+
+      </ol>
+
+      <div class="tip">
+        <span class="icon">✅</span>
+        <span>Prefer to export a CSV rather than write to the database? Use the <strong>Download CSV</strong> button after step 5 to save the processed file.</span>
+      </div>
+    </div>
+
+    <!-- DESCRIPTIONS -->
+    <div class="section" id="descriptions">
+      <h2>Fixing descriptions</h2>
+      <p>The database has a 40-character limit on product descriptions (TradeName). The app highlights any that are too long with a <strong>⚠</strong> warning.</p>
+
+      <h3>Option 1 — Bulk Truncate</h3>
+      <p>Click <strong>Bulk Truncate</strong> to automatically cut all descriptions down to 40 characters. This is the quickest option when there are many long descriptions. Note that truncation cuts at exactly 40 characters, so check that the results still make sense.</p>
+
+      <h3>Option 2 — Edit individually</h3>
+      <p>In the preview grid, click on any description cell in the <strong>New_Description</strong> column and type your edited version. This is best when you only have a few rows to fix and want to be careful about what gets cut.</p>
+
+      <h3>Option 3 — Add a shortening rule</h3>
+      <p>If a particular word or phrase makes descriptions too long for a supplier consistently (e.g. "Tablets" → "Tab"), you can add a shortening rule. Click <strong>Edit Rules</strong> in the supplier panel. Rules support find/replace with optional whole-word and case-insensitive matching. Once saved, the rule will apply automatically every time you process this supplier's file.</p>
+
+      <div class="warn">
+        <span class="icon">⚠️</span>
+        <span>You cannot Execute Upsert while any description warnings remain. All ⚠ rows must be resolved first.</span>
+      </div>
+    </div>
+
+    <!-- SAVING SETTINGS -->
+    <div class="section" id="settings">
+      <h2>Saving settings for a supplier</h2>
+      <p>After mapping the columns for a supplier the first time, click <strong>Save Settings</strong>. The app stores the mappings in <code>supplier_settings.json</code> and will restore them automatically the next time you open a file for that supplier.</p>
+
+      <h3>Multiple sheet layouts</h3>
+      <p>Some suppliers send an Excel workbook where different product categories are on separate sheets, each with a different column layout. You can save up to 6 separate layouts per supplier. After mapping the columns for a sheet, give it a name in the <strong>Sheet layout</strong> dropdown and click Save Settings. Next time, select the layout that matches the sheet you are working on.</p>
+
+      <div class="note">
+        <span class="icon">ℹ️</span>
+        <span>Settings are saved to the <code>data/</code> folder inside the app directory. If you ever need to reset a supplier back to defaults, you can delete their entry from <code>supplier_settings.json</code> using a text editor.</span>
+      </div>
+    </div>
+
+    <!-- SPECIALS -->
+    <div class="section" id="specials">
+      <h2>Specials files</h2>
+      <p>At the top of the app, switch the mode to <strong>Specials File</strong> to process a supplier specials promotion file.</p>
+      <p>The Specials workflow has its own column mapping rules per brand, stored in <code>brand_import_mappings.json</code>. If a brand's specials file uses a different layout from what the app expects, contact your supervisor to update the mapping.</p>
+      <p>The Specials mode also includes a <strong>Stock Card</strong> lookup that searches the Healthsoft database by barcode — useful for confirming a product exists before adding a special.</p>
+    </div>
+
+    <!-- FAQ -->
+    <div class="section" id="faq">
+      <h2>Common questions</h2>
+
+      <div class="faq-item">
+        <div class="q">The column dropdowns are all wrong — the data is in different columns than expected.</div>
+        <div class="a">This usually means the supplier's file has extra header rows at the top. Check the <strong>Skip rows</strong> setting (top of the app) and increase it by 1 or 2 until the data lines up correctly.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="q">The app says "0 rows" after Build Output.</div>
+        <div class="a">This usually means the <strong>Exclude rows with no Barcode, Supplier Code and Pharmacode</strong> filter has removed everything, because none of those columns were mapped. Check that at least one of Barcode, Supplier Code, or Pharmacode is mapped to a column in the file.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="q">Preview Changes is showing everything as NEW, but these products already exist.</div>
+        <div class="a">Check that the correct supplier is selected. If the supplier is correct, check that Supplier Code or Barcode is mapped — those are the fields used to match against existing records. If neither is present in the file, the app cannot find the existing records to update.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="q">The app is not connecting to the database.</div>
+        <div class="a">Check that the database path in <strong>Settings</strong> is correct and that you can access the network location. The Microsoft Access Database Engine must also be installed on your PC. Contact your IT support if the issue persists.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="q">I accidentally wrote wrong data to the database.</div>
+        <div class="a">Contact your supervisor immediately. Do not run the file again. The database may need to be restored from a backup.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="q">The PLU column is showing numbers like "100234.0" instead of "100234".</div>
+        <div class="a">This can happen with some Excel files. Make sure the PLU column is mapped correctly — the app automatically strips the ".0" from columns it recognises as ID fields. If it still occurs, check that the column header name matches one of the recognised names (PLU, Pharmacode, Barcode, SAP Code).</div>
+      </div>
+
+    </div>
+
+    <!-- TIPS -->
+    <div class="section" id="tips">
+      <h2>Tips &amp; shortcuts</h2>
+
+      <h3>Keyboard shortcut in the preview grid</h3>
+      <p>Select one or more rows in the Preview Changes grid and press <kbd>Delete</kbd> to remove them before writing to the database. This is useful for excluding products you don't want to update (e.g. discontinued items).</p>
+
+      <h3>Check the CharCount column</h3>
+      <p>After Build Output, the output table shows a <strong>CharCount</strong> column next to TradeName. Scan down this column — any value over 40 will need to be fixed before you can upsert.</p>
+
+      <h3>Use Preview Changes even if you're confident</h3>
+      <p>It only takes a moment and it lets you catch surprises — like a supplier changing their column order — before anything is written to the database.</p>
+
+      <h3>Download CSV as a backup</h3>
+      <p>Before running Execute Upsert on a large file, it's good practice to click <strong>Download CSV</strong> first. That way you have a copy of exactly what was loaded, which can help if anything needs to be checked later.</p>
+
+      <div class="tip">
+        <span class="icon">💡</span>
+        <span>If you're not sure whether to use <strong>Execute Upsert</strong> or <strong>Replace All</strong> — use Upsert. It is the safer option: it only adds and updates, it never removes existing records. Replace All deletes everything for the supplier first, so only use it when you're certain the incoming file is complete.</span>
+      </div>
+    </div>
+
+  </article>
+</div>
+
+<footer>
+  Price File Builder — Staff Help Guide &nbsp;|&nbsp; Healthsoft Internal Use
+</footer>
+
+</body>
+</html>

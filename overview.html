@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Price File Builder — Application Overview</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f4f6f9;
+      color: #2c3e50;
+      font-size: 15px;
+      line-height: 1.65;
+    }
+
+    /* ── Header ──────────────────────────────────────── */
+    header {
+      background: linear-gradient(135deg, #1a3c5e 0%, #2d6a9f 100%);
+      color: #fff;
+      padding: 48px 60px 40px;
+    }
+    header .eyebrow {
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      opacity: 0.75;
+      margin-bottom: 10px;
+    }
+    header h1 {
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    header p.subtitle {
+      font-size: 17px;
+      opacity: 0.88;
+      max-width: 620px;
+    }
+    header .meta {
+      margin-top: 24px;
+      display: flex;
+      gap: 32px;
+      font-size: 13px;
+      opacity: 0.75;
+    }
+    header .meta span strong { opacity: 1; color: #fff; }
+
+    /* ── Layout ─────────────────────────────────────── */
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 48px 40px 80px;
+    }
+
+    /* ── Section titles ──────────────────────────────── */
+    h2 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #1a3c5e;
+      margin-bottom: 18px;
+      padding-bottom: 8px;
+      border-bottom: 3px solid #2d6a9f;
+    }
+    h3 {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1a3c5e;
+      margin-bottom: 6px;
+    }
+
+    /* ── Cards / Sections ────────────────────────────── */
+    .section { margin-bottom: 48px; }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+      margin-top: 4px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 22px 24px;
+      border: 1px solid #dde3ed;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+
+    .card .icon {
+      font-size: 26px;
+      margin-bottom: 10px;
+    }
+
+    .card p {
+      font-size: 14px;
+      color: #555;
+    }
+
+    /* ── Problem / Solution ──────────────────────────── */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    .box {
+      background: #fff;
+      border-radius: 8px;
+      padding: 24px 28px;
+      border: 1px solid #dde3ed;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .box.problem { border-left: 5px solid #e74c3c; }
+    .box.solution { border-left: 5px solid #27ae60; }
+
+    .box h3 {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+      color: #888;
+    }
+    .box ul {
+      padding-left: 18px;
+    }
+    .box ul li {
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: #444;
+    }
+
+    /* ── Workflow steps ──────────────────────────────── */
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin-top: 4px;
+    }
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 20px;
+      padding: 18px 0;
+      border-bottom: 1px solid #eaecf0;
+    }
+    .step:last-child { border-bottom: none; }
+    .step-num {
+      flex-shrink: 0;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #2d6a9f;
+      color: #fff;
+      font-weight: 700;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .step-body h3 { margin-bottom: 3px; font-size: 15px; }
+    .step-body p { font-size: 14px; color: #555; }
+
+    /* ── Metrics ─────────────────────────────────────── */
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 20px;
+    }
+    .metric {
+      background: #fff;
+      border-radius: 8px;
+      padding: 24px 20px;
+      text-align: center;
+      border: 1px solid #dde3ed;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .metric .value {
+      font-size: 36px;
+      font-weight: 700;
+      color: #2d6a9f;
+      line-height: 1.1;
+    }
+    .metric .label {
+      font-size: 13px;
+      color: #666;
+      margin-top: 6px;
+    }
+
+    /* ── Tech stack ──────────────────────────────────── */
+    .tech-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #dde3ed;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .tech-table th {
+      background: #f0f4f8;
+      padding: 12px 18px;
+      text-align: left;
+      font-size: 13px;
+      font-weight: 600;
+      color: #1a3c5e;
+      border-bottom: 1px solid #dde3ed;
+    }
+    .tech-table td {
+      padding: 12px 18px;
+      font-size: 14px;
+      border-bottom: 1px solid #f0f4f8;
+      color: #444;
+    }
+    .tech-table tr:last-child td { border-bottom: none; }
+    .tech-table tr:hover td { background: #fafbfd; }
+
+    /* ── Footer ──────────────────────────────────────── */
+    footer {
+      text-align: center;
+      font-size: 12px;
+      color: #999;
+      padding: 24px 0 40px;
+      border-top: 1px solid #e0e5ec;
+      margin-top: 48px;
+    }
+
+    @media (max-width: 700px) {
+      header { padding: 32px 24px; }
+      main { padding: 32px 20px; }
+      .two-col { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Internal Tool — Application Overview</div>
+  <h1>Price File Builder</h1>
+  <p class="subtitle">A Windows desktop application that automates the import, transformation, and loading of supplier price files into the RxOne pharmacy database — replacing a time-consuming manual process.</p>
+  <div class="meta">
+    <span><strong>Platform:</strong> Windows Desktop (PyQt6)</span>
+    <span><strong>Database:</strong> Microsoft Access (suppliers.mdb)</span>
+    <span><strong>Target Users:</strong> Healthsoft operations staff</span>
+  </div>
+</header>
+
+<main>
+
+  <!-- ── Problem & Solution ─────────────────────────── -->
+  <div class="section">
+    <h2>Background</h2>
+    <div class="two-col">
+      <div class="box problem">
+        <h3>The Problem</h3>
+        <ul>
+          <li>Suppliers send price files in varied CSV and Excel formats with no consistent structure</li>
+          <li>Each file required manual column mapping, data cleaning, and re-formatting</li>
+          <li>Descriptions had to be manually shortened to fit the 40-character database limit</li>
+          <li>Data had to be manually checked against the existing database before loading</li>
+          <li>The process was taking <strong>up to an hour per file</strong></li>
+        </ul>
+      </div>
+      <div class="box solution">
+        <h3>The Solution</h3>
+        <ul>
+          <li>A guided desktop app with per-supplier memory — settings are saved and reused automatically</li>
+          <li>Automatic column detection and named templates for known suppliers</li>
+          <li>Intelligent description cleaning, unit normalisation, and bulk truncation tools</li>
+          <li>Side-by-side change preview before any data is written to the database</li>
+          <li>One-click upsert (insert + update) directly to the Access database</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Key Metrics ────────────────────────────────── -->
+  <div class="section">
+    <h2>Key Metrics</h2>
+    <div class="metrics">
+      <div class="metric">
+        <div class="value">~1 hr</div>
+        <div class="label">Previous time per price file</div>
+      </div>
+      <div class="metric">
+        <div class="value">Minutes</div>
+        <div class="label">Processing time with the app</div>
+      </div>
+      <div class="metric">
+        <div class="value">40 chr</div>
+        <div class="label">Description limit — automatically enforced</div>
+      </div>
+      <div class="metric">
+        <div class="value">0 SQL</div>
+        <div class="label">No SQL knowledge required by staff</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Features ──────────────────────────────────── -->
+  <div class="section">
+    <h2>Main Features</h2>
+    <div class="card-grid">
+
+      <div class="card">
+        <div class="icon">📂</div>
+        <h3>Flexible File Loading</h3>
+        <p>Opens CSV and Excel files (.xlsx / .xls). For multi-sheet workbooks, the user selects which sheet to load. ID-like columns (Pharmacode, Barcode, PLU) are automatically treated as text to prevent formatting errors like "123456.0".</p>
+      </div>
+
+      <div class="card">
+        <div class="icon">🗂️</div>
+        <h3>Smart Column Mapping</h3>
+        <p>Maps supplier file columns to standard price file fields: PLU, Pharmacode, Retail, Cost, Barcode/EAN, Supplier Code, and Outer. Pre-built templates for known suppliers auto-populate the mapping; a General template uses fuzzy matching for new suppliers.</p>
+      </div>
+
+      <div class="card">
+        <div class="icon">✏️</div>
+        <h3>Description Builder</h3>
+        <p>Combines multiple columns into a single TradeName field with a configurable separator. Applies title case conversion, unit normalisation (e.g. "75 g" → "75g"), optional brand prefix, and enforces the 40-character database limit with a bulk-truncate tool.</p>
+      </div>
+
+      <div class="card">
+        <div class="icon">🔤</div>
+        <h3>Shortening Rules</h3>
+        <p>Per-supplier find-and-replace rules stored in supplier_rules.json automatically shorten verbose descriptions. Rules support whole-word matching, case-insensitive search, and regular expressions. Rules are editable from within the app.</p>
+      </div>
+
+      <div class="card">
+        <div class="icon">💾</div>
+        <h3>Supplier Memory</h3>
+        <p>Column mappings, TradeName settings, and skip-row counts are saved per supplier and restored automatically on next use. Up to 6 separate sheet layouts can be saved per supplier for workbooks where different product categories live on different sheets.</p>
+      </div>
+
+      <div class="card">
+        <div class="icon">🔍</div>
+        <h3>Change Preview</h3>
+        <p>Before writing anything, the app compares the processed output against the live Access database. NEW records appear in green; UPDATES appear in amber showing old vs. new description and prices. Rows can be removed from the preview before committing.</p>
+      </div>
+
+      <div class="card">
+        <div class="icon">⚡</div>
+        <h3>Background Prefetch</h3>
+        <p>As soon as a supplier is selected, the app silently fetches their existing database records in the background. This means the "Preview Changes" step is near-instant rather than requiring a separate wait.</p>
+      </div>
+
+      <div class="card">
+        <div class="icon">📤</div>
+        <h3>Export &amp; Upsert</h3>
+        <p>Output can be exported as a CSV file, or written directly to the Access database with a single click. The upsert matches on Supplier Code first, falling back to Barcode. A "Replace All" option is available for full refreshes of a supplier's records.</p>
+      </div>
+
+      <div class="card">
+        <div class="icon">🎁</div>
+        <h3>Specials File Workflow</h3>
+        <p>A separate mode handles supplier specials files, with per-brand column mapping rules and a stock barcode lookup that queries the Healthsoft SQL Server database in real time.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Typical Workflow ───────────────────────────── -->
+  <div class="section">
+    <h2>Typical Workflow</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h3>Select Supplier</h3>
+          <p>Choose the supplier from the dropdown. The app immediately starts fetching their existing records from Access in the background.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h3>Open Price File</h3>
+          <p>Browse to the supplier's CSV or Excel file. For multi-sheet workbooks, select the correct sheet.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h3>Review Mappings</h3>
+          <p>The template auto-fills column mappings where possible. Review and adjust the column mapping and TradeName settings as needed.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <h3>Build Output</h3>
+          <p>Click Build Output. The app processes the file, applies TradeName rules, filters invalid rows, and displays the result.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <h3>Preview &amp; Fix Descriptions</h3>
+          <p>Preview Changes compares the output against the database. Edit descriptions directly in the grid, or use Bulk Truncate to clip everything to 40 characters. Remove any rows not needed.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">6</div>
+        <div class="step-body">
+          <h3>Save Settings &amp; Write to Database</h3>
+          <p>Optionally save the current mappings for this supplier. Then click Execute Upsert to write new and updated records to the Access database — or Download CSV to export the file instead.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Technical Overview ─────────────────────────── -->
+  <div class="section">
+    <h2>Technical Overview</h2>
+    <table class="tech-table">
+      <thead>
+        <tr>
+          <th>Component</th>
+          <th>Technology</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Desktop UI</td>
+          <td>Python / PyQt6</td>
+          <td>Native Windows application; packaged as a standalone .exe with PyInstaller — no Python install required on end-user machines</td>
+        </tr>
+        <tr>
+          <td>Data Processing</td>
+          <td>pandas</td>
+          <td>CSV and Excel loading, column transformation, de-duplication, money parsing</td>
+        </tr>
+        <tr>
+          <td>Primary Database</td>
+          <td>Microsoft Access (.mdb) via ODBC</td>
+          <td>Reads and writes the live suppliers.mdb; supports both local and network (UNC) paths</td>
+        </tr>
+        <tr>
+          <td>Fallback Database</td>
+          <td>SQLite</td>
+          <td>Available for environments without the Access ODBC driver installed</td>
+        </tr>
+        <tr>
+          <td>Stock Lookup</td>
+          <td>SQL Server via ODBC</td>
+          <td>Used by the Specials workflow to look up barcodes in the Healthsoft stock database</td>
+        </tr>
+        <tr>
+          <td>Configuration</td>
+          <td>settings.ini</td>
+          <td>Database paths and credentials stored locally; editable via the app's Settings panel or any text editor</td>
+        </tr>
+        <tr>
+          <td>Supplier Templates</td>
+          <td>JSON files</td>
+          <td>templates.json, supplier_settings.json, and supplier_rules.json store all per-supplier configuration</td>
+        </tr>
+        <tr>
+          <td>Alternative Interface</td>
+          <td>Streamlit (web)</td>
+          <td>A browser-based version of the same workflow is available for environments where the desktop app cannot be installed</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</main>
+
+<footer>
+  Price File Builder — Internal Application Overview &nbsp;|&nbsp; Healthsoft &nbsp;|&nbsp; Confidential
+</footer>
+
+</body>
+</html>

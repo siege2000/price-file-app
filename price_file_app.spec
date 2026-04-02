@@ -18,6 +18,8 @@ a = Analysis(
     datas=[
         # Config shipped with the app — destination '.' = top-level dist folder
         ('settings.ini',                        '.'),
+        # Help page
+        ('help.html',                           '.'),
         # Data folder — JSON configs + replacements CSV
         ('data/supplier_rules.json',            'data'),
         ('data/supplier_settings.json',         'data'),

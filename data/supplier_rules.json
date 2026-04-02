@@ -723,6 +723,26 @@
     {
       "from": "Multivitamin",
       "to": "M/Vit"
+    },
+    {
+      "from": "N/A",
+      "to": ""
+    },
+    {
+      "from": "New",
+      "to": ""
+    },
+    {
+      "from": "Value Pack",
+      "to": "V/Pack"
+    },
+    {
+      "from": "Chocolate",
+      "to": "Choc"
+    },
+    {
+      "from": "Powder",
+      "to": "Pwd"
     }
   ],
   "453": [

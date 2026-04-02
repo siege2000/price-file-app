@@ -179,8 +179,13 @@ def build_upsert_preview(
     matched_code = df[has_code].merge(
         ex_by_code, left_on="_code", right_index=True, how="left"
     )
-    # Rows with no code, or code not found in Access
-    no_code_match_mask = ~has_code | (has_code & ~df["_code"].isin(ex_by_code.index))
+    # Only rows with no supplier code fall through to barcode matching.
+    # Rows that have a code (whether found in Access or not) are fully handled
+    # by the code path above — including new items whose code isn't in Access yet
+    # (those appear in code_new below). Without this restriction, new items that
+    # have both a supplier code AND a barcode would appear twice in the preview:
+    # once via code_new and once via the barcode/unmatched path.
+    no_code_match_mask = ~has_code
     df_remaining = df[no_code_match_mask].copy()
 
     # --- Step 2: match remaining by barcode ---

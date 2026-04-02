@@ -2198,6 +2198,13 @@ class MainWindow(QMainWindow):
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 if __name__ == "__main__":
+    # When frozen by PyInstaller, sys._MEIPASS is the _internal folder where
+    # all bundled files (data/, settings.ini, etc.) are placed.  Chdir there
+    # so every relative path in the app resolves correctly.
+    if getattr(sys, "frozen", False):
+        import os
+        os.chdir(sys._MEIPASS)
+
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
     win = MainWindow()

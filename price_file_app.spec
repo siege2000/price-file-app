@@ -4,10 +4,6 @@
 #   pyinstaller price_file_app.spec
 #
 # Output:  dist/PriceFileApp/PriceFileApp.exe
-#
-# After building, copy these alongside the exe before shipping:
-#   settings.ini
-#   data/  (entire folder)
 
 block_cipher = None
 
@@ -16,7 +12,14 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[
-        # Brand import mapping config (read by specials module via __file__)
+        # Config shipped with the app — destination '.' = top-level dist folder
+        ('settings.ini',                        '.'),
+        # Data folder — JSON configs + replacements CSV
+        ('data/supplier_rules.json',            'data'),
+        ('data/supplier_settings.json',         'data'),
+        ('data/templates.json',                 'data'),
+        ('data/replacements.csv',               'data'),
+        # Specials module config (read via __file__ at runtime)
         ('specials/brand_import_mappings.json', 'specials'),
     ],
     hiddenimports=[
@@ -32,7 +35,6 @@ a = Analysis(
     hooksconfig={},
     runtime_hooks=[],
     excludes=[
-        # Streamlit and its dependency tree — not used in the Qt app
         'streamlit',
         'tornado',
         'watchdog',
@@ -43,7 +45,7 @@ a = Analysis(
         'boto3',
         'botocore',
         'IPython',
-        'jinja2',          # pulled in by streamlit, not needed standalone
+        'jinja2',
         'jsonschema',
         'matplotlib',
         'scipy',
@@ -70,13 +72,13 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=False,          # set True if UPX is installed, reduces size ~30%
-    console=False,      # no console window (GUI app)
+    upx=False,
+    console=False,
     disable_windowed_traceback=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    # icon='icon.ico',  # uncomment and supply a .ico file to set the exe icon
+    # icon='icon.ico',
 )
 
 coll = COLLECT(

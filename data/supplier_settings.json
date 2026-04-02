@@ -166,7 +166,7 @@
         },
         "description": {
           "columns": [
-            "VITACO HEALTH (NZ) LTD ORDER FORM EFFECTIVE FROM FEBRUARY 2026 UNTIL FURTHER NOTICE ",
+            "VITACO HEALTH (NZ) LTD ORDER FORM EFFECTIVE FROM 1 APRIL - 30 APRIL 2026 UNTIL FURTHER NOTICE ",
             "Unnamed: 1",
             "Unnamed: 2"
           ],
@@ -190,11 +190,83 @@
         },
         "description": {
           "columns": [
-            "VITACO HEALTH (NZ) LTD ORDER FORM EFFECTIVE FROM FEBRUARY 2026 UNTIL FURTHER NOTICE",
+            "VITACO HEALTH (NZ) LTD ORDER FORM EFFECTIVE FROM 1 APRIL - 30 APRIL 2026 UNTIL FURTHER NOTICE",
             "Unnamed: 1",
             "Unnamed: 2"
           ],
           "prefix": "Hea",
+          "separator": " ",
+          "title_case": true,
+          "normalize_units": true
+        }
+      },
+      "Musashi": {
+        "template": "Toniq",
+        "skip_rows": 6,
+        "columns": {
+          "plu": "(None)",
+          "pharmacode": "Unnamed: 6",
+          "retail": "Unnamed: 9",
+          "cost": "Unnamed: 8",
+          "barcode": "Unnamed: 5",
+          "sc": "Unnamed: 4",
+          "outer": "(None)"
+        },
+        "description": {
+          "columns": [
+            "VITACO HEALTH (NZ) LTD ORDER FORM EFFECTIVE FROM 1 APRIL - 30 APRIL 2026 UNTIL FURTHER NOTICE - CONFIDENTIAL",
+            "Unnamed: 1",
+            "Unnamed: 2"
+          ],
+          "prefix": "MUS",
+          "separator": " ",
+          "title_case": true,
+          "normalize_units": true
+        }
+      },
+      "Athena": {
+        "template": "Toniq",
+        "skip_rows": 6,
+        "columns": {
+          "plu": "(None)",
+          "pharmacode": "(None)",
+          "retail": "Unnamed: 7",
+          "cost": "Unnamed: 6",
+          "barcode": "Unnamed: 4",
+          "sc": "Unnamed: 3",
+          "outer": "Unnamed: 8"
+        },
+        "description": {
+          "columns": [
+            "VITACO HEALTH (NZ) LTD ORDER FORM\n EFFECTIVE FROM 1 APRIL - 30 APRIL 2026  UNTIL FURTHER NOTICE",
+            "Unnamed: 1",
+            "Unnamed: 2"
+          ],
+          "prefix": "Ath",
+          "separator": " ",
+          "title_case": true,
+          "normalize_units": true
+        }
+      },
+      "Balance": {
+        "template": "Toniq",
+        "skip_rows": 6,
+        "columns": {
+          "plu": "(None)",
+          "pharmacode": "Unnamed: 5",
+          "retail": "Unnamed: 7",
+          "cost": "Unnamed: 6",
+          "barcode": "Unnamed: 4",
+          "sc": "Unnamed: 3",
+          "outer": "(None)"
+        },
+        "description": {
+          "columns": [
+            "VITACO HEALTH (NZ) LTD ORDER FORM EFFECTIVE FROM 1 APRIL - 30 APRIL 2026 UNTIL FURTHER NOTICE",
+            "Unnamed: 1",
+            "Unnamed: 2"
+          ],
+          "prefix": "BAL",
           "separator": " ",
           "title_case": true,
           "normalize_units": true

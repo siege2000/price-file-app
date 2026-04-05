@@ -1,14 +1,86 @@
 {
   "_comment": "Per-brand import column mappings for the Specials Import screen.",
-  "_instructions": [
-    "Key = Brand name exactly as stored in the Access Brand table.",
-    "columns: maps each field role to the Excel/CSV column header name.",
-    "  Use a list to try multiple names in order (first match wins).",
-    "rules.group_id:    'sequential_by_deal_name' | 'from_column:<col>'",
-    "rules.flybuys:     true | false",
-    "rules.lowest_free: 'disc_pct_and_multibuy_gt1' | 'from_column:<col>' | 'always_false'",
-    "rules.special_price: 'product_price_then_disc_pct' (default) | 'direct_column:<col>'"
-  ],
+
+  "_instructions_for_ai": {
+    "purpose": "This file configures how the Price File Builder app maps a supplier's specials spreadsheet into the RxOne specials grid. Each top-level key (except keys starting with '_') is a brand entry. When the user selects a brand in the Import Specials screen and clicks Import, the app uses that brand's entry to automatically map columns and derive fields.",
+
+    "how_to_add_a_new_brand": [
+      "1. Find the exact brand name from the Access Brand table. Query: SELECT BrandID, BrandName FROM Brand ORDER BY BrandName. The JSON key must match BrandName exactly (case-sensitive).",
+      "2. Open the supplier's specials file and note the column header names. If there are title/metadata rows above the header row, count them and set skip_rows accordingly.",
+      "3. Add a new entry to this file using the schema described below.",
+      "4. Validate JSON syntax before saving — missing commas or brackets will prevent the app from loading any mappings.",
+      "5. Rebuild the exe via PyInstaller for the change to take effect in a deployed installation. In development it takes effect on next app launch."
+    ],
+
+    "schema": {
+      "_description": "Optional human-readable note about the brand or file format. Not used by the app.",
+      "skip_rows": "Optional integer. Number of leading rows in the file to skip before the column header row. Default = 0 (first row is the header). Example: Vantage Gold files have a 4-row title block so skip_rows = 4.",
+      "columns": {
+        "_note": "Each key is a field role used internally by the app. The value is the column header name in the supplier's file (matched case-insensitively). All roles are optional — omit any that are not present in the file.",
+        "barcode":           "Barcode or EAN. Multiple barcodes in one cell may be comma-separated; all are preserved joined by commas. Can also be a Pharmacode if no barcode is available.",
+        "description":       "Product name/description. Truncated to 40 characters to match the RxOne field limit.",
+        "pos_note":          "Point-of-sale note text printed on receipts or shelf tickets.",
+        "multibuy":          "Minimum quantity required to qualify for the deal (e.g. 2 for 'buy 2 get 1 free').",
+        "multibuy_fallback": "Fallback quantity column used only when multibuy is empty for a row (e.g. a separate 'Quantity breaks' column for X-for-$Y deals).",
+        "deal_name":         "Name of the deal or promotion. Used by the sequential_by_deal_name group_id rule to assign sequential Group IDs to rows that share the same deal. Can also be a supplier/category name if grouping by supplier is desired.",
+        "product_price":     "Direct special retail price as a dollar amount (e.g. 4.99). Takes priority over discount-based price calculation. Maps to the Special Price column in the grid.",
+        "discount_type":     "Type of discount. Currently only '%' is handled — if the value is '%' and product_price is empty, the app formats discount_value as a percentage string (e.g. '50%').",
+        "discount_value":    "Numeric discount amount. Used together with discount_type when no product_price is available.",
+        "special_name":      "Promotion or special name. Read from the first data row only and used to pre-fill the Special Name text field at the bottom of the Import Specials screen.",
+        "start_date":        "Promotion start date. Read from the first data row only to pre-fill the Start Date picker. Must be ISO format (YYYY-MM-DD) or a similar pandas-parseable date string.",
+        "end_date":          "Promotion end date. Read from the first data row only to pre-fill the Finish Date picker. Same format requirements as start_date."
+      },
+      "rules": {
+        "_note": "Rules control fields that are derived from logic rather than read directly from a column. All rules have defaults and are optional.",
+        "group_id": {
+          "_default": "sequential_by_deal_name",
+          "sequential_by_deal_name": "Assign a sequential integer Group ID to each unique deal_name value encountered in the file. First unique deal name = 1, second = 2, etc. All rows sharing the same deal name get the same Group ID. Rows with no deal name get no Group ID. Use this when the file has a deal/promotion name column.",
+          "from_column:<col>": "Read the Group ID value directly from the named column in the file. Replace <col> with the exact column header. Example: 'from_column:Product A or B'."
+        },
+        "flybuys": {
+          "_default": false,
+          "false": "All rows get Flybuys = N.",
+          "true": "All rows get Flybuys = Y. Use only when every product in the brand's specials participates in the Flybuys loyalty scheme."
+        },
+        "lowest_free": {
+          "_default": "disc_pct_and_multibuy_gt1",
+          "disc_pct_and_multibuy_gt1": "Set Get Lowest Free = Y only when BOTH: discount_type is '%' AND MultiBuy Qty > 1. Covers the typical 'buy 2, cheapest item % off' scenario.",
+          "always_false": "All rows get Get Lowest Free = N. Use for simple price specials with no multibuy/free-item mechanic.",
+          "from_column:<col>": "Read the flag from the named column. Values Y, YES, TRUE, or 1 (case-insensitive) map to Y; anything else maps to N."
+        },
+        "special_price": {
+          "_default": "product_price_then_disc_pct",
+          "product_price_then_disc_pct": "Use product_price column if it has a value (dollar amount). Otherwise, if discount_type is '%', format discount_value as a percentage string (e.g. '50%'). If neither is available, Special Price is left blank.",
+          "direct_column:<col>": "Read Special Price directly from the named column with no further calculation. Use when the file already contains the final formatted price string."
+        }
+      }
+    },
+
+    "worked_examples": {
+      "flat_price_list_with_title_block": "See 'Vantage Gold' — file has 4 metadata rows before the header (skip_rows: 4), direct CTC price, no multibuy, grouped by Supplier column.",
+      "mixed_price_and_percent_with_dates": "See 'GXH' — file has named-header columns for price, percentage discount, multibuy qty, deal grouping, and promotion dates. Lowest Free derived automatically."
+    },
+
+    "column_resolution_priority": "For each field the app tries: (1) brand mapping column value, (2) built-in known header names (e.g. 'Barcodes', 'Product name', 'Promotion POS note'), (3) manual column-number combo set by the user in the UI. Brand mapping takes priority over all."
+  },
+
+  "Vantage Gold": {
+    "_description": "Vantage Gold promotional pricelist — CTC price per product, grouped by supplier",
+    "skip_rows": 4,
+    "columns": {
+      "barcode":        "Pharmacode",
+      "description":    "Description",
+      
+      "deal_name":      "Supplier",
+      "product_price":  "RRP"
+    },
+    "rules": {
+      "group_id":      "sequential_by_deal_name",
+      "flybuys":       false,
+      "lowest_free":   "always_false",
+      "special_price": "product_price_then_disc_pct"
+    }
+  },
 
   "GXH": {
     "_description": "Green Cross Health — RxOne Excel export format",

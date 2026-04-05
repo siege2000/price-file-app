@@ -681,12 +681,16 @@ class SpecialsWidget(QWidget):
         sep = _FIELD_SEP.get(self._cmb_field_delim.currentIndex(), ",")
         ignore_first = self._chk_ignore_first.isChecked()
 
+        # Brand mapping may specify how many leading rows to skip before the header
+        brand_name = self._cmb_brand.currentText().strip()
+        bm_skip = int(_BRAND_MAPPINGS.get(brand_name, {}).get("skip_rows", 0))
+        header_row = bm_skip if bm_skip > 0 else (None if ignore_first else 0)
+
         try:
             ext = os.path.splitext(path)[1].lower()
             if ext in (".xls", ".xlsx"):
-                raw = pd.read_excel(path, header=0 if not ignore_first else None,
-                                    dtype=str)
-                if ignore_first:
+                raw = pd.read_excel(path, header=header_row, dtype=str)
+                if ignore_first and bm_skip == 0:
                     raw.columns = [f"Column {i+1}" for i in range(len(raw.columns))]
             else:
                 for enc in ("utf-8-sig", "cp1252", "latin-1"):
@@ -694,7 +698,7 @@ class SpecialsWidget(QWidget):
                         raw = pd.read_csv(
                             path,
                             sep=sep,
-                            header=0 if not ignore_first else None,
+                            header=header_row,
                             dtype=str,
                             encoding=enc,
                         )
@@ -704,10 +708,10 @@ class SpecialsWidget(QWidget):
                 else:
                     raw = pd.read_csv(
                         path, sep=sep,
-                        header=0 if not ignore_first else None,
+                        header=header_row,
                         dtype=str, encoding="latin-1",
                     )
-                if ignore_first:
+                if ignore_first and bm_skip == 0:
                     raw.columns = [f"Column {i+1}" for i in range(len(raw.columns))]
 
             raw = raw.fillna("")
@@ -873,7 +877,10 @@ class SpecialsWidget(QWidget):
             disc_type  = _v(deal_disc_type_s, i)
             disc_val   = _v(deal_disc_val_s, i)
             if prod_price:
-                sp = prod_price
+                try:
+                    sp = f"{float(prod_price):.2f}"
+                except ValueError:
+                    sp = prod_price
             elif disc_type == "%" and disc_val:
                 try:
                     pct = float(disc_val)

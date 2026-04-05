@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Price File Builder — Specials Brand Mapping Guide</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f4f5fb;
+      color: #1e1b4b;
+      font-size: 15px;
+      line-height: 1.65;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1a1740 0%, #3730a3 100%);
+      color: #fff;
+      padding: 32px 48px;
+    }
+    header h1 { font-size: 28px; font-weight: 700; }
+    header p  { opacity: 0.8; margin-top: 6px; font-size: 15px; }
+
+    .layout {
+      display: flex;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 32px 80px;
+      gap: 40px;
+    }
+
+    nav {
+      flex-shrink: 0;
+      width: 220px;
+      position: sticky;
+      top: 24px;
+      align-self: flex-start;
+    }
+    nav h2 {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #888;
+      margin-bottom: 10px;
+    }
+    nav a {
+      display: block;
+      padding: 7px 12px;
+      border-radius: 5px;
+      text-decoration: none;
+      font-size: 14px;
+      color: #444;
+      transition: background 0.15s, color 0.15s;
+    }
+    nav a:hover {
+      background: #ede9fe;
+      color: #1e1b4b;
+      font-weight: 600;
+      border-left: 3px solid #f0a500;
+      padding-left: 9px;
+    }
+    nav .section-group { margin-bottom: 16px; }
+
+    article { flex: 1; min-width: 0; }
+
+    .section {
+      background: #fff;
+      border-radius: 8px;
+      border: 1px solid #e0e5ec;
+      padding: 32px 36px;
+      margin-bottom: 28px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    h2 {
+      font-size: 20px;
+      color: #1e1b4b;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #f0a500;
+    }
+
+    h3 {
+      font-size: 15px;
+      font-weight: 600;
+      color: #3730a3;
+      margin: 22px 0 8px;
+    }
+    h3:first-of-type { margin-top: 4px; }
+
+    p { color: #444; margin-bottom: 12px; }
+    p:last-child { margin-bottom: 0; }
+
+    .steps { margin: 0; padding: 0; list-style: none; }
+    .steps li {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      padding: 14px 0;
+      border-bottom: 1px solid #f0f3f8;
+    }
+    .steps li:last-child { border-bottom: none; }
+    .step-n {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #f0a500;
+      color: #1a1740;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .step-text strong { display: inline; font-weight: 600; color: #1e1b4b; }
+    .step-text span { font-size: 14px; color: #555; display: block; margin-top: 3px; }
+
+    .bullet-list {
+      list-style: disc;
+      padding-left: 20px;
+      margin: 8px 0 4px;
+    }
+    .bullet-list li {
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 4px;
+      padding: 0;
+      border: none;
+      display: list-item;
+    }
+
+    .tip, .note, .warn {
+      border-radius: 6px;
+      padding: 12px 16px;
+      font-size: 14px;
+      margin: 14px 0;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .tip  { background: #e8f5e9; border-left: 4px solid #43a047; color: #2e7d32; }
+    .note { background: #ede9fe; border-left: 4px solid #3730a3; color: #1e1b4b; }
+    .warn { background: #fff8e1; border-left: 4px solid #f9a825; color: #6d4c00; }
+    .tip .icon, .note .icon, .warn .icon { flex-shrink: 0; font-size: 16px; }
+
+    kbd {
+      display: inline-block;
+      background: #f0f3f8;
+      border: 1px solid #cdd5e0;
+      border-bottom-width: 2px;
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-family: 'Consolas', monospace;
+      font-size: 13px;
+      color: #333;
+    }
+
+    /* ── Code blocks ─────────────────────────────────── */
+    pre {
+      background: #1e1b4b;
+      color: #e2e8f0;
+      border-radius: 8px;
+      padding: 20px 22px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.7;
+      overflow-x: auto;
+      margin: 14px 0;
+    }
+    pre .comment { color: #94a3b8; }
+    pre .key     { color: #93c5fd; }
+    pre .str     { color: #86efac; }
+    pre .kw      { color: #f9a825; }
+
+    /* ── Reference table ─────────────────────────────── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin: 14px 0;
+    }
+    th {
+      background: #1e1b4b;
+      color: #fff;
+      text-align: left;
+      padding: 9px 12px;
+      font-weight: 600;
+      font-size: 13px;
+    }
+    td {
+      padding: 9px 12px;
+      border-bottom: 1px solid #e0e5ec;
+      color: #444;
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td { background: #f8f9fc; }
+    td code {
+      font-family: 'Consolas', monospace;
+      font-size: 13px;
+      color: #3730a3;
+      background: #ede9fe;
+      padding: 1px 6px;
+      border-radius: 3px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 700;
+      margin-right: 4px;
+    }
+    .badge.green  { background: #d4edda; color: #155724; }
+    .badge.amber  { background: #fff3cd; color: #856404; }
+    .badge.blue   { background: #cce5ff; color: #004085; }
+
+    footer {
+      text-align: center;
+      font-size: 12px;
+      color: #aaa;
+      padding: 20px;
+      border-top: 1px solid #e0e5ec;
+    }
+
+    @media (max-width: 750px) {
+      .layout { flex-direction: column; padding: 24px 16px; }
+      nav { width: 100%; position: static; }
+      .section { padding: 22px 18px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Specials Brand Mapping Guide</h1>
+  <p>How to configure <strong>brand_import_mappings.json</strong> to automatically map a supplier's specials file into the Import Specials screen.</p>
+</header>
+
+<div class="layout">
+
+  <!-- ── Sidebar nav ── -->
+  <nav>
+    <div class="section-group">
+      <h2>On this page</h2>
+      <a href="#overview">Overview</a>
+      <a href="#file-location">File location</a>
+      <a href="#how-it-works">How it works</a>
+      <a href="#columns-ref">Columns reference</a>
+      <a href="#rules-ref">Rules reference</a>
+      <a href="#add-brand">Adding a new brand</a>
+      <a href="#example">Full example (GXH)</a>
+      <a href="#faq">FAQ</a>
+    </div>
+  </nav>
+
+  <!-- ── Main content ── -->
+  <article>
+
+    <!-- OVERVIEW -->
+    <div class="section" id="overview">
+      <h2>Overview</h2>
+      <p>
+        When you click <strong>Import&hellip;</strong> on the Specials tab, the app reads the
+        supplier's spreadsheet and maps its columns into the standard specials grid
+        (Barcode, Description, Special Price, MultiBuy Qty, etc.).
+        For most one-off files this is done manually via the <em>Columns</em> panel on the right.
+      </p>
+      <p>
+        For brands that send specials in a consistent, named-column format (such as Green Cross Health),
+        you can define a <strong>brand mapping</strong> in <kbd>brand_import_mappings.json</kbd>.
+        Once configured, selecting the brand and clicking Import will automatically populate the grid
+        &mdash; no manual column selection required.
+      </p>
+      <p>The mapping also drives several derived fields that cannot come directly from a column:</p>
+      <ul class="bullet-list">
+        <li>Group ID (which rows belong to the same multi-product deal)</li>
+        <li>Get Lowest Free flag</li>
+        <li>Flybuys flag</li>
+        <li>Special Name and date pickers (auto-filled from the file's first row)</li>
+      </ul>
+    </div>
+
+    <!-- FILE LOCATION -->
+    <div class="section" id="file-location">
+      <h2>File location</h2>
+      <p>
+        The file is bundled inside the application at:
+      </p>
+      <pre><span class="str">specials/brand_import_mappings.json</span></pre>
+      <p>
+        Because it is bundled inside the <kbd>.exe</kbd>, you must edit it in the source project
+        and rebuild to apply changes in a deployed installation.
+        Open the file in any text editor &mdash; it is plain JSON.
+      </p>
+      <div class="warn">
+        <span class="icon">&#9888;</span>
+        <div>JSON is strict about syntax. Use a code editor such as VS Code for editing; it will flag any missing commas, mismatched brackets, or stray characters before you save.</div>
+      </div>
+    </div>
+
+    <!-- HOW IT WORKS -->
+    <div class="section" id="how-it-works">
+      <h2>How it works</h2>
+
+      <h3>1 &mdash; Brand name lookup</h3>
+      <p>
+        When you select a brand in the Import Specials screen, the app looks up the brand's
+        <em>display name</em> (as it appears in the Brand dropdown) in the JSON file.
+        The key must match exactly, including capitalisation.
+      </p>
+      <pre><span class="comment">// The brand name in the dropdown is "GXH"</span>
+<span class="key">"GXH"</span>: <span class="kw">{</span> <span class="comment">// ← key must match exactly</span>
+  ...
+<span class="kw">}</span></pre>
+      <p>
+        If no match is found the app falls back to named-column auto-detection and the manual
+        column-number combos &mdash; the same behaviour as for unmapped brands.
+      </p>
+
+      <h3>2 &mdash; Column resolution order</h3>
+      <p>For each field the app resolves the source column in this priority order:</p>
+      <ol class="steps">
+        <li>
+          <div class="step-n">1</div>
+          <div class="step-text">
+            <strong>Brand mapping</strong>
+            <span>The column name listed in <code>"columns"</code> for this brand in the JSON file.</span>
+          </div>
+        </li>
+        <li>
+          <div class="step-n">2</div>
+          <div class="step-text">
+            <strong>Known header names</strong>
+            <span>A built-in list of common column names (e.g. <em>Barcodes</em>, <em>Product name</em>, <em>Promotion POS note</em>) checked case-insensitively.</span>
+          </div>
+        </li>
+        <li>
+          <div class="step-n">3</div>
+          <div class="step-text">
+            <strong>Manual combo position</strong>
+            <span>The column number set in the Columns panel on the right of the screen.</span>
+          </div>
+        </li>
+      </ol>
+      <p>
+        Steps 2 and 3 are fallbacks used when no brand mapping exists.
+        When a brand mapping is configured, step 1 applies for all mapped roles.
+      </p>
+
+      <h3>3 &mdash; Auto-fill on import</h3>
+      <p>
+        After the file is loaded, the app also reads the <strong>first data row</strong> to
+        pre-populate the Special Name field and the Start / Finish date pickers.
+        The columns used for this are taken from the <code>special_name</code>, <code>start_date</code>,
+        and <code>end_date</code> roles in the brand mapping.
+      </p>
+    </div>
+
+    <!-- COLUMNS REFERENCE -->
+    <div class="section" id="columns-ref">
+      <h2>Columns reference</h2>
+      <p>
+        Each entry under <code>"columns"</code> maps a <em>role name</em> (used internally by the app)
+        to the <em>exact column header</em> in the supplier's file (case-insensitive match).
+      </p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Role</th>
+            <th>Grid field populated</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>barcode</code></td>
+            <td>Barcode</td>
+            <td>Barcodes or EAN codes. If the cell contains multiple barcodes separated by commas, all are stored joined by commas.</td>
+          </tr>
+          <tr>
+            <td><code>description</code></td>
+            <td>Description</td>
+            <td>Product name. Truncated to 40 characters to match the RxOne field limit.</td>
+          </tr>
+          <tr>
+            <td><code>pos_note</code></td>
+            <td>POS Note</td>
+            <td>Text printed on the POS receipt or ticket at point of sale.</td>
+          </tr>
+          <tr>
+            <td><code>multibuy</code></td>
+            <td>MultiBuy Qty</td>
+            <td>The minimum quantity required to qualify for the deal (e.g. <em>2</em> for "buy 2 get 1 free").</td>
+          </tr>
+          <tr>
+            <td><code>multibuy_fallback</code></td>
+            <td>MultiBuy Qty (fallback)</td>
+            <td>Used only if <code>multibuy</code> is empty for a row. Useful when the file uses a separate "Quantity breaks" column for X-for-$Y deals.</td>
+          </tr>
+          <tr>
+            <td><code>deal_name</code></td>
+            <td>Deal Name</td>
+            <td>The name of the deal or promotion. Also used by the <code>sequential_by_deal_name</code> group_id rule to assign Group IDs.</td>
+          </tr>
+          <tr>
+            <td><code>product_price</code></td>
+            <td>Special Price (dollar amount)</td>
+            <td>A direct dollar price for the product (e.g. <em>4.99</em>). Takes priority over discount-based price calculation. See the <code>special_price</code> rule.</td>
+          </tr>
+          <tr>
+            <td><code>discount_type</code></td>
+            <td>Used to derive Special Price</td>
+            <td>The type of discount. Currently only <em>%</em> is handled; if the value is <em>%</em>, the app formats the discount as a percentage string (e.g. <em>50%</em>).</td>
+          </tr>
+          <tr>
+            <td><code>discount_value</code></td>
+            <td>Used to derive Special Price</td>
+            <td>The numeric discount amount, used together with <code>discount_type</code> when no <code>product_price</code> is present.</td>
+          </tr>
+          <tr>
+            <td><code>special_name</code></td>
+            <td>Special Name field (auto-fill)</td>
+            <td>Read from the first row only. Pre-fills the Special Name text box at the bottom of the screen (e.g. <em>April 2026 Catalogue</em>).</td>
+          </tr>
+          <tr>
+            <td><code>start_date</code></td>
+            <td>Start Date picker (auto-fill)</td>
+            <td>Read from the first row only. Must be in ISO date format (<em>YYYY-MM-DD</em>) or a similar parseable format.</td>
+          </tr>
+          <tr>
+            <td><code>end_date</code></td>
+            <td>Finish Date picker (auto-fill)</td>
+            <td>Read from the first row only. Same format requirements as <code>start_date</code>.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="note">
+        <span class="icon">&#8505;</span>
+        <div>
+          All roles are optional. If a role is omitted, the app falls back to known header names and then to the manual combo position.
+          You only need to include the roles where the supplier's column name differs from the built-in defaults.
+        </div>
+      </div>
+    </div>
+
+    <!-- RULES REFERENCE -->
+    <div class="section" id="rules-ref">
+      <h2>Rules reference</h2>
+      <p>
+        The <code>"rules"</code> block controls how derived fields are calculated.
+        These fields cannot be read directly from a single column and require business logic.
+      </p>
+
+      <!-- group_id -->
+      <h3>group_id &mdash; Group ID assignment</h3>
+      <p>Controls how rows are assigned to deal groups (the Group ID column in RxOne).</p>
+      <table>
+        <thead><tr><th>Value</th><th>Behaviour</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>sequential_by_deal_name</code></td>
+            <td>
+              <span class="badge green">Default</span>
+              Assigns a sequential integer Group ID to each unique Deal Name encountered in the file.
+              The first unique deal name seen becomes Group ID 1, the second becomes 2, and so on.
+              All rows sharing the same deal name receive the same Group ID.
+              Rows with no deal name receive no Group ID.
+            </td>
+          </tr>
+          <tr>
+            <td><code>from_column:&lt;column name&gt;</code></td>
+            <td>
+              Reads the Group ID value directly from the named column in the source file.
+              Replace <em>&lt;column name&gt;</em> with the exact header.
+              Example: <code>from_column:Product A or B</code>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- flybuys -->
+      <h3>flybuys &mdash; Flybuys loyalty flag</h3>
+      <p>Sets the Flybuys column for every row to a fixed value.</p>
+      <table>
+        <thead><tr><th>Value</th><th>Behaviour</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>false</code></td>
+            <td><span class="badge green">Default</span> All rows get Flybuys = N.</td>
+          </tr>
+          <tr>
+            <td><code>true</code></td>
+            <td>All rows get Flybuys = Y (all items participate in Flybuys).</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="note">
+        <span class="icon">&#8505;</span>
+        <div>There is no per-row Flybuys column option at this time. If different rows need different Flybuys values you will need to edit the grid manually after import.</div>
+      </div>
+
+      <!-- lowest_free -->
+      <h3>lowest_free &mdash; Get Lowest Free flag</h3>
+      <p>Controls the "Get Lowest Free" column, which tells RxOne to automatically give the cheapest qualifying item for free.</p>
+      <table>
+        <thead><tr><th>Value</th><th>Behaviour</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>disc_pct_and_multibuy_gt1</code></td>
+            <td>
+              <span class="badge green">Default</span>
+              Set to Y only when <em>both</em> of the following are true:
+              <ul class="bullet-list" style="margin-top:6px">
+                <li>The discount type is <em>%</em> and the discount value is greater than zero.</li>
+                <li>The MultiBuy Qty is greater than 1.</li>
+              </ul>
+              This covers the typical "buy 2, get the lowest priced item % off" scenario.
+            </td>
+          </tr>
+          <tr>
+            <td><code>from_column:&lt;column name&gt;</code></td>
+            <td>
+              Reads the flag from the named column. Values of <em>Y</em>, <em>YES</em>, <em>TRUE</em>, or <em>1</em>
+              (case-insensitive) map to Y; anything else maps to N.
+            </td>
+          </tr>
+          <tr>
+            <td><code>always_false</code></td>
+            <td>All rows get Get Lowest Free = N, regardless of other values.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- special_price -->
+      <h3>special_price &mdash; Special Price calculation</h3>
+      <p>Controls how the Special Price column is populated.</p>
+      <table>
+        <thead><tr><th>Value</th><th>Behaviour</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>product_price_then_disc_pct</code></td>
+            <td>
+              <span class="badge green">Default</span>
+              First checks the <code>product_price</code> column mapping.
+              If a value is present, it is used as a dollar price (e.g. <em>4.99</em>).
+              If the product price column is empty for that row, the app looks at the
+              <code>discount_type</code> and <code>discount_value</code> columns:
+              if the type is <em>%</em>, the value is formatted as a percentage string
+              (e.g. <em>50%</em>).
+              If neither is available, Special Price is left blank.
+            </td>
+          </tr>
+          <tr>
+            <td><code>direct_column:&lt;column name&gt;</code></td>
+            <td>
+              Reads the Special Price directly from the named column with no further
+              calculation. Use this when the file already contains the final formatted
+              price string.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ADDING A NEW BRAND -->
+    <div class="section" id="add-brand">
+      <h2>Adding a new brand</h2>
+
+      <ol class="steps">
+        <li>
+          <div class="step-n">1</div>
+          <div class="step-text">
+            <strong>Find the brand name</strong>
+            <span>In the Import Specials screen, select the brand from the dropdown. Note the name exactly as it appears &mdash; the JSON key is case-sensitive.</span>
+          </div>
+        </li>
+        <li>
+          <div class="step-n">2</div>
+          <div class="step-text">
+            <strong>Open a sample file from the supplier</strong>
+            <span>Check the column headers. Note the exact spelling of each column you want to map.</span>
+          </div>
+        </li>
+        <li>
+          <div class="step-n">3</div>
+          <div class="step-text">
+            <strong>Open <kbd>specials/brand_import_mappings.json</kbd> in a text editor</strong>
+            <span>Add a new entry before the closing <code>}</code> of the file. Separate it from the previous entry with a comma.</span>
+          </div>
+        </li>
+        <li>
+          <div class="step-n">4</div>
+          <div class="step-text">
+            <strong>Write the mapping block</strong>
+            <span>Copy the template below and fill in the column names and rules for the new brand.</span>
+          </div>
+        </li>
+        <li>
+          <div class="step-n">5</div>
+          <div class="step-text">
+            <strong>Save and rebuild</strong>
+            <span>For the change to appear in the <kbd>.exe</kbd>, run PyInstaller to create a new build. In development the change takes effect immediately on next app launch.</span>
+          </div>
+        </li>
+      </ol>
+
+      <h3>Minimal template</h3>
+      <p>Start with this skeleton and add only the column roles and rules you need:</p>
+      <pre><span class="key">"BrandName"</span>: <span class="kw">{</span>
+  <span class="key">"_description"</span>: <span class="str">"Friendly note about this brand — not used by the app"</span>,
+  <span class="key">"columns"</span>: <span class="kw">{</span>
+    <span class="key">"barcode"</span>:      <span class="str">"EAN"</span>,          <span class="comment">// header in the supplier's file</span>
+    <span class="key">"description"</span>:  <span class="str">"Product Name"</span>,
+    <span class="key">"pos_note"</span>:     <span class="str">"POS Text"</span>,
+    <span class="key">"multibuy"</span>:     <span class="str">"Min Qty"</span>,
+    <span class="key">"deal_name"</span>:    <span class="str">"Deal Name"</span>,
+    <span class="key">"product_price"</span>: <span class="str">"Special Price"</span>,
+    <span class="key">"special_name"</span>: <span class="str">"Promotion Name"</span>,
+    <span class="key">"start_date"</span>:   <span class="str">"Start Date"</span>,
+    <span class="key">"end_date"</span>:     <span class="str">"End Date"</span>
+  <span class="kw">}</span>,
+  <span class="key">"rules"</span>: <span class="kw">{</span>
+    <span class="key">"group_id"</span>:      <span class="str">"sequential_by_deal_name"</span>,
+    <span class="key">"flybuys"</span>:       <span class="kw">false</span>,
+    <span class="key">"lowest_free"</span>:   <span class="str">"always_false"</span>,
+    <span class="key">"special_price"</span>: <span class="str">"product_price_then_disc_pct"</span>
+  <span class="kw">}</span>
+<span class="kw">}</span></pre>
+
+      <div class="tip">
+        <span class="icon">&#10003;</span>
+        <div>
+          You can omit any role you don't need. For example, if the file has no POS note column,
+          simply leave out the <code>pos_note</code> line. The Columns panel in the app lets users
+          still assign it manually if needed.
+        </div>
+      </div>
+
+      <h3>Example: discount-based price, no deal names</h3>
+      <p>For a brand that uses a flat percentage discount and no multi-product deals:</p>
+      <pre><span class="key">"ACME"</span>: <span class="kw">{</span>
+  <span class="key">"_description"</span>: <span class="str">"Acme Wholesale — monthly percentage specials"</span>,
+  <span class="key">"columns"</span>: <span class="kw">{</span>
+    <span class="key">"barcode"</span>:        <span class="str">"Barcode"</span>,
+    <span class="key">"description"</span>:    <span class="str">"Item Description"</span>,
+    <span class="key">"discount_type"</span>:  <span class="str">"Disc Type"</span>,
+    <span class="key">"discount_value"</span>: <span class="str">"Disc %"</span>
+  <span class="kw">}</span>,
+  <span class="key">"rules"</span>: <span class="kw">{</span>
+    <span class="key">"group_id"</span>:    <span class="str">"sequential_by_deal_name"</span>,
+    <span class="key">"flybuys"</span>:     <span class="kw">false</span>,
+    <span class="key">"lowest_free"</span>: <span class="str">"always_false"</span>,
+    <span class="key">"special_price"</span>: <span class="str">"product_price_then_disc_pct"</span>
+  <span class="kw">}</span>
+<span class="kw">}</span></pre>
+
+      <h3>Example: Group ID read directly from file column</h3>
+      <p>When the supplier's file already has a column that identifies which deal group each row belongs to:</p>
+      <pre><span class="key">"DIST"</span>: <span class="kw">{</span>
+  <span class="key">"_description"</span>: <span class="str">"Distributor — group IDs pre-assigned in file"</span>,
+  <span class="key">"columns"</span>: <span class="kw">{</span>
+    <span class="key">"barcode"</span>:       <span class="str">"EAN13"</span>,
+    <span class="key">"description"</span>:   <span class="str">"Description"</span>,
+    <span class="key">"product_price"</span>: <span class="str">"Deal Price"</span>
+  <span class="kw">}</span>,
+  <span class="key">"rules"</span>: <span class="kw">{</span>
+    <span class="key">"group_id"</span>:    <span class="str">"from_column:Group"</span>,  <span class="comment">// reads the "Group" column directly</span>
+    <span class="key">"flybuys"</span>:     <span class="kw">false</span>,
+    <span class="key">"lowest_free"</span>: <span class="str">"always_false"</span>,
+    <span class="key">"special_price"</span>: <span class="str">"product_price_then_disc_pct"</span>
+  <span class="kw">}</span>
+<span class="kw">}</span></pre>
+    </div>
+
+    <!-- FULL EXAMPLE -->
+    <div class="section" id="example">
+      <h2>Full example: GXH (Green Cross Health)</h2>
+      <p>
+        The GXH brand uses an RxOne-generated Excel export as the specials source file.
+        The file contains named columns, date information, and a mix of direct prices and
+        percentage discounts. Here is the full mapping:
+      </p>
+      <pre><span class="key">"GXH"</span>: <span class="kw">{</span>
+  <span class="key">"_description"</span>: <span class="str">"Green Cross Health — RxOne Excel export format"</span>,
+  <span class="key">"columns"</span>: <span class="kw">{</span>
+    <span class="key">"barcode"</span>:           <span class="str">"Barcodes"</span>,
+    <span class="key">"description"</span>:       <span class="str">"Product name"</span>,
+    <span class="key">"pos_note"</span>:          <span class="str">"Promotion POS note"</span>,
+    <span class="key">"multibuy"</span>:          <span class="str">"Min qty"</span>,
+    <span class="key">"multibuy_fallback"</span>: <span class="str">"Quantity breaks"</span>,
+    <span class="key">"deal_name"</span>:         <span class="str">"Deal name"</span>,
+    <span class="key">"product_price"</span>:     <span class="str">"Product price"</span>,
+    <span class="key">"discount_type"</span>:     <span class="str">"Deal discount type"</span>,
+    <span class="key">"discount_value"</span>:    <span class="str">"Deal discount value"</span>,
+    <span class="key">"special_name"</span>:      <span class="str">"Promotion name"</span>,
+    <span class="key">"start_date"</span>:        <span class="str">"Promotion start date"</span>,
+    <span class="key">"end_date"</span>:          <span class="str">"Promotion end date"</span>
+  <span class="kw">}</span>,
+  <span class="key">"rules"</span>: <span class="kw">{</span>
+    <span class="key">"group_id"</span>:      <span class="str">"sequential_by_deal_name"</span>,
+    <span class="key">"flybuys"</span>:       <span class="kw">false</span>,
+    <span class="key">"lowest_free"</span>:   <span class="str">"disc_pct_and_multibuy_gt1"</span>,
+    <span class="key">"special_price"</span>: <span class="str">"product_price_then_disc_pct"</span>
+  <span class="kw">}</span>
+<span class="kw">}</span></pre>
+      <h3>How GXH import works step by step</h3>
+      <ol class="steps">
+        <li>
+          <div class="step-n">1</div>
+          <div class="step-text">
+            <strong>Special Name, Start &amp; End dates</strong>
+            <span>Read from the first data row of the file's <em>Promotion name</em>, <em>Promotion start date</em>, and <em>Promotion end date</em> columns and pre-filled into the bottom bar fields.</span>
+          </div>
+        </li>
+        <li>
+          <div class="step-n">2</div>
+          <div class="step-text">
+            <strong>Barcode</strong>
+            <span>Read from <em>Barcodes</em>. Cells containing multiple barcodes (comma-separated) are stored joined with commas.</span>
+          </div>
+        </li>
+        <li>
+          <div class="step-n">3</div>
+          <div class="step-text">
+            <strong>Description</strong>
+            <span>Read from <em>Product name</em>, truncated to 40 characters.</span>
+          </div>
+        </li>
+        <li>
+          <div class="step-n">4</div>
+          <div class="step-text">
+            <strong>Special Price</strong>
+            <span>If <em>Product price</em> has a value, that dollar amount is used. Otherwise, if <em>Deal discount type</em> is <em>%</em>, the value from <em>Deal discount value</em> is formatted as a percentage string (e.g. <em>50%</em>).</span>
+          </div>
+        </li>
+        <li>
+          <div class="step-n">5</div>
+          <div class="step-text">
+            <strong>MultiBuy Qty</strong>
+            <span>Taken from <em>Min qty</em>. If empty, falls back to <em>Quantity breaks</em>.</span>
+          </div>
+        </li>
+        <li>
+          <div class="step-n">6</div>
+          <div class="step-text">
+            <strong>Get Lowest Free</strong>
+            <span>Set to Y only when the discount type is % and the MultiBuy Qty is greater than 1 (the <em>disc_pct_and_multibuy_gt1</em> rule).</span>
+          </div>
+        </li>
+        <li>
+          <div class="step-n">7</div>
+          <div class="step-text">
+            <strong>Group ID</strong>
+            <span>Each unique <em>Deal name</em> value is assigned a sequential integer starting at 1. All products sharing the same deal name receive the same Group ID.</span>
+          </div>
+        </li>
+        <li>
+          <div class="step-n">8</div>
+          <div class="step-text">
+            <strong>Flybuys</strong>
+            <span>Always N for GXH (<code>flybuys: false</code>).</span>
+          </div>
+        </li>
+      </ol>
+    </div>
+
+    <!-- FAQ -->
+    <div class="section" id="faq">
+      <h2>FAQ</h2>
+
+      <div class="faq-item">
+        <div class="q">The brand name appears in the dropdown but the mapping is not being applied. Why?</div>
+        <div class="a">The JSON key must match the brand name exactly, including capitalisation and spaces. For example, <code>"Green Cross Health"</code> and <code>"GREEN CROSS HEALTH"</code> are treated as different keys. Check the brand name in the dropdown and compare it character-for-character with the JSON key.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="q">My supplier's column header names change between files. Can the mapping handle this?</div>
+        <div class="a">Not automatically. If the headers change you will need to either update the JSON mapping or use the manual Columns panel to select the correct column numbers for that file. If the supplier provides two variants you can list the preferred name in the mapping and rely on the fallback auto-detection for the alternative name (if it happens to match a known built-in header).</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="q">How do I map a field where the column name contains a colon (:)?</div>
+        <div class="a">Colons in the <em>column header value</em> (the right-hand side of the mapping) are fine — they are just plain strings. The colon syntax (<code>from_column:</code>, <code>direct_column:</code>) only applies to the <em>rules</em> values on the left side of a rule, not to column names.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="q">Can I use a list of column names to try in order?</div>
+        <div class="a">This is noted as a supported syntax in the file's own <code>_instructions</code> comment, but the current app code resolves to a single string value per role. For now, use the single most reliable column name. If the column header varies, update the JSON when switching file formats.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="q">Will the mapping survive a software update?</div>
+        <div class="a">The file is bundled inside the <kbd>.exe</kbd>. Any software rebuild will overwrite the bundled copy. Keep your local changes in the source project's <kbd>specials/brand_import_mappings.json</kbd> so they are included in the next build.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="q">What happens to columns in the file that are not mapped?</div>
+        <div class="a">They are ignored during the automatic mapping pass. The raw file data is still held in memory after import, so no data is lost — but only the mapped columns appear in the specials grid.</div>
+      </div>
+    </div>
+
+  </article>
+</div>
+
+<footer>Price File Builder &mdash; Specials Brand Mapping Guide &mdash; Last updated April 2026</footer>
+
+</body>
+</html>

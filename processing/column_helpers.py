@@ -8,13 +8,19 @@ def safe_str(series) -> pd.Series:
 
     Integer-valued floats (e.g. 1263310.0 read from Excel) are converted
     without the decimal suffix so barcodes/codes match correctly.
+    Leading zeros are preserved — e.g. '074469513951' stays '074469513951'.
     """
     s = pd.Series(series)
     numeric = pd.to_numeric(s, errors="coerce")
     is_whole_float = numeric.notna() & (numeric % 1 == 0)
     result = s.astype("string").fillna("").str.strip()
     if is_whole_float.any():
-        result[is_whole_float] = numeric[is_whole_float].astype("Int64").astype("string")
+        as_int = numeric[is_whole_float].astype("Int64").astype("string")
+        # Only apply the int conversion where the string didn't already have a
+        # leading zero — preserves barcodes like '074469513951' as-is.
+        original = result[is_whole_float]
+        keep_original = original.str.startswith("0")
+        result[is_whole_float] = original.where(keep_original, as_int)
     return result
 
 

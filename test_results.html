@@ -271,7 +271,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#2c3e50;ma
     <div class="stat-box"><div class="stat-num">3,881</div><div class="stat-label">Legacy App Rows</div></div>
     <div class="stat-box stat-ok"><div class="stat-num">3,881</div><div class="stat-label">Matched by Code</div></div>
     <div class="stat-box stat-ok"><div class="stat-num">0</div><div class="stat-label">Cost/Retail Diffs</div></div>
-    <div class="stat-box stat-ok"><div class="stat-num">785</div><div class="stat-label">Barcode Diffs (expected)</div></div>
+    <div class="stat-box stat-ok"><div class="stat-num">568</div><div class="stat-label">Barcode Diffs (expected)</div></div>
     <div class="stat-box stat-ok"><div class="stat-num">0</div><div class="stat-label">+ &amp; Bug Remaining</div></div>
     <div class="stat-box stat-info"><div class="stat-num">31</div><div class="stat-label">Only in New</div></div>
     <div class="stat-box stat-ok"><div class="stat-num">0</div><div class="stat-label">Only in Legacy</div></div>
@@ -287,12 +287,12 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#2c3e50;ma
   </div>
 
   <!-- Barcode diffs — expected -->
-  <p class="section-title desc-title">&#x2139; Barcode Differences &mdash; 785 products <span class="badge badge-ok">Expected — two known causes</span></p>
+  <p class="section-title desc-title">&#x2139; Barcode Differences &mdash; 568 products <span class="badge badge-ok">Leading zero issue resolved</span></p>
   <div class="notice-ok">
-    All 785 barcode differences are explainable — no data loss:
+    Leading zero fix confirmed after reimport — 200 previously mismatched barcodes now match exactly (e.g. <code>074469513951</code>, <code>070501051054</code>). Remaining 568 differences are all multi-barcode and expected:
     <ul style="margin:6px 0 0;padding-left:20px">
-      <li><strong>200 &mdash; Leading zero stripped:</strong> e.g. <code>074469513951</code> &rarr; <code>74469513951</code>. Canonical EAN-13 form; both are valid.</li>
-      <li><strong>585 &mdash; Multiple barcodes stored:</strong> GDC source has comma-separated barcodes; new app stores all, legacy stored only the first. New app has more data.</li>
+      <li><strong>0 &mdash; Leading zero stripped: RESOLVED.</strong> All 200 now match legacy exactly.</li>
+      <li><strong>568 &mdash; Multiple barcodes stored:</strong> GDC source has comma-separated barcodes; new app stores all, legacy stored only the first. New app has more data.</li>
     </ul>
   </div>
 
@@ -459,10 +459,10 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#2c3e50;ma
         <td>Dialog now reads "Suppliers file not found — Open Settings to set the correct path" with a single OK button that opens Settings directly, then reloads on close. <em>Fix applied: 05 April 2026.</em></td>
       </tr>
       <tr>
-        <td><span class="badge badge-info">Info</span></td>
+        <td><span class="badge badge-ok">FIXED</span></td>
         <td>Barcode leading zeros stripped</td>
-        <td>GDC &mdash; 200 products</td>
-        <td>New app stores canonical EAN-13 (no leading zero). Legacy stored with leading zero. Both are valid — confirm which format RxOne requires.</td>
+        <td>GDC &mdash; was 200 products &rarr; now 0</td>
+        <td><code>safe_str()</code> in <code>column_helpers.py</code> was converting whole-number floats via <code>Int64</code>, dropping leading zeros (e.g. <code>074469513951.0</code> &rarr; <code>74469513951</code>). Fixed to preserve the original string when it already starts with <code>0</code>. RxOne requires the leading zero form. <em>Fix applied: 05 April 2026.</em></td>
       </tr>
       <tr>
         <td><span class="badge badge-info">Info</span></td>

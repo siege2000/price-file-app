@@ -35,7 +35,7 @@ def clean_description(series: pd.Series) -> pd.Series:
     """Strip trademark symbols and non-standard characters from a description series."""
     s = series.astype("string").fillna("")
     s = s.str.replace(r"[™®©]", "", regex=True)
-    s = s.str.replace(r"[^\w\s\-\.,%/()]", "", regex=True)
+    s = s.str.replace(r"[^\w\s\-\.,%/()+&]", "", regex=True)
     s = s.str.replace(r"\s{2,}", " ", regex=True).str.strip()
     return s
 

@@ -883,8 +883,17 @@ class PriceFileWidget(QWidget):
             self._cmb_supplier.clear()
             self._cmb_supplier.addItem("— select supplier —")
             self._cmb_supplier.addItems(self._suppliers_df["Label"].tolist())
-        except Exception as e:
-            QMessageBox.warning(self, "Suppliers", f"Could not load suppliers:\n{e}")
+        except Exception:
+            btn = QMessageBox.warning(
+                self,
+                "Suppliers file not found",
+                "Suppliers file not found.\n\nOpen Settings to set the correct path.",
+                QMessageBox.StandardButton.Ok,
+            )
+            if btn == QMessageBox.StandardButton.Ok:
+                dlg = SettingsDialog(self)
+                dlg.exec()
+                self._load_suppliers()
 
     # ─── File open / reload ───────────────────────────────────────────────────
     def _open_file(self):
@@ -908,6 +917,12 @@ class PriceFileWidget(QWidget):
             self._excel_sheets = sheets
         self._lbl_file.setText(Path(path).name)
         self._reload_data()
+        # Invalidate the Access cache so the next Preview/Upsert fetches fresh data
+        self._prefetched_details = None
+        self._prefetch_supplier_id = None
+        supplier_id = self._get_supplier_id()
+        if supplier_id is not None:
+            self._start_prefetch(supplier_id)
 
     def _on_skip_changed(self):
         if self._file_path:
@@ -1770,6 +1785,10 @@ class PriceFileWidget(QWidget):
             self._lbl_preview_info.setText("")
 
         self.status_message.emit(f"Upsert done: {inserted} inserted, {updated} updated.")
+        # Refresh Access cache so the next operation sees the new data
+        supplier_id = self._get_supplier_id()
+        if supplier_id is not None:
+            self._start_prefetch(supplier_id)
 
     def _on_upsert_error(self, msg: str):
         self._btn_exec_upsert.setEnabled(True)
@@ -1883,6 +1902,10 @@ class PriceFileWidget(QWidget):
         self._preview_table.setModel(None)
         self._lbl_preview_info.setText("")
         self.status_message.emit(f"Replace complete: {inserted} rows inserted for {supplier_label}.")
+        # Refresh Access cache so the next operation sees the new data
+        supplier_id = self._get_supplier_id()
+        if supplier_id is not None:
+            self._start_prefetch(supplier_id)
 
     def _on_replace_error(self, msg: str):
         self._btn_replace_all.setEnabled(True)

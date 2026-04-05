@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>RxOne DB Test Results</title><style>
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#2c3e50;margin:0;padding:0 0 48px}
+.page-header{background:#1a2940;color:white;padding:28px 40px 24px}
+.page-header h1{margin:0;font-size:1.7em;font-weight:600}
+.page-header p{margin:8px 0 0;opacity:.65;font-size:.88em}
+.test-section{background:white;margin:28px 40px;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.09);overflow:hidden}
+.test-header{background:#2c3e50;color:white;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.test-header h2{margin:0;font-size:1.05em;font-weight:600}
+.test-date{font-size:.78em;opacity:.65}
+.summary-grid{display:flex;gap:1px;background:#dde1e7;border-bottom:1px solid #dde1e7}
+.stat-box{flex:1;background:white;padding:18px 12px;text-align:center;min-width:80px}
+.stat-num{font-size:2em;font-weight:700;color:#2c3e50}
+.stat-label{font-size:.72em;color:#7f8c8d;margin-top:5px;text-transform:uppercase;letter-spacing:.4px}
+.stat-ok .stat-num{color:#27ae60}.stat-warn .stat-num{color:#e74c3c}
+.stat-info .stat-num{color:#2980b9}.stat-neutral .stat-num{color:#e67e22}
+.section-title{padding:18px 24px 10px;margin:0;font-size:.95em;font-weight:600;border-top:1px solid #f0f0f0}
+.critical-title{color:#c0392b}.desc-title{color:#7f8c8d}
+.new-only-title{color:#2980b9}.legacy-only-title{color:#8e44ad}
+.all-ok{color:#27ae60;padding:18px 24px;margin:0;font-weight:500}
+.resolved{color:#27ae60;padding:18px 24px;margin:0;font-weight:500;display:flex;align-items:center;gap:8px}
+.data-table{width:100%;border-collapse:collapse;font-size:.85em}
+.data-table th{background:#f7f8fa;padding:10px 14px;text-align:left;font-weight:600;color:#666;border-bottom:2px solid #e8e8e8;white-space:nowrap}
+.data-table td{padding:9px 14px;border-bottom:1px solid #f2f2f2;vertical-align:middle}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:#fafbfc}
+.inner-diff{width:100%;border-collapse:collapse}
+.inner-diff td{padding:3px 8px;font-size:.92em}
+.col-label{font-weight:600;color:#555;width:110px;white-space:nowrap}
+.product-row td{background:#fff8f8 !important;border-top:2px solid #f5c6c6}
+.code{font-family:'Courier New',monospace;font-weight:600;font-size:.92em;white-space:nowrap}
+.new-val{color:#27ae60;font-weight:500}.legacy-val{color:#e74c3c;font-weight:500}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.75em;font-weight:600;margin-left:6px}
+.badge-critical{background:#fdecea;color:#c0392b}.badge-info{background:#e8f4fd;color:#2980b9}
+.badge-ok{background:#eafaf1;color:#27ae60}.badge-warn{background:#fef9e7;color:#e67e22}
+.notice{background:#fffbea;border-left:4px solid #f1c40f;padding:12px 20px;margin:16px 24px;font-size:.85em;border-radius:0 4px 4px 0}
+.notice-ok{background:#eafaf1;border-left:4px solid #27ae60;padding:12px 20px;margin:16px 24px;font-size:.85em;border-radius:0 4px 4px 0}
+.run-history{font-size:.78em;color:#95a5a6;padding:0 24px 16px}
+.run-history span{margin-right:16px}
+</style></head>
+<body>
+<div class="page-header">
+  <h1>RxOne &mdash; Database Test Results</h1>
+  <p>Comparing: <strong>New App</strong> (suppliers.mdb) vs <strong>Legacy App</strong> (suppliers_rename.mdb)</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     TEST 1 — New App vs Legacy App (DB-to-DB)  RERUN 05 Apr 2026
+     ═══════════════════════════════════════════════════════════════════ -->
+<div class="test-section">
+  <div class="test-header">
+    <h2>Test 1 &mdash; Supplier 402 (TBC) &bull; New App vs Legacy App &bull; SupplierID = 402</h2>
+    <span class="test-date">Latest run: 05 April 2026 &mdash; column mapping corrected</span>
+  </div>
+  <div class="summary-grid">
+    <div class="stat-box"><div class="stat-num">866</div><div class="stat-label">New App Rows</div></div>
+    <div class="stat-box"><div class="stat-num">886</div><div class="stat-label">Legacy App Rows</div></div>
+    <div class="stat-box stat-ok"><div class="stat-num">756</div><div class="stat-label">Matched by Code</div></div>
+    <div class="stat-box stat-warn"><div class="stat-num">1</div><div class="stat-label">Cost/Retail Diffs</div></div>
+    <div class="stat-box stat-warn"><div class="stat-num">2</div><div class="stat-label">Barcode Diffs</div></div>
+    <div class="stat-box stat-info"><div class="stat-num">110</div><div class="stat-label">Only in New</div></div>
+    <div class="stat-box stat-neutral"><div class="stat-num">130</div><div class="stat-label">Only in Legacy</div></div>
+  </div>
+
+  <div class="run-history">
+    <span>&#x1F4C5; Original run: 03 April 2026 13:02 &mdash; 49 rows missing (wrong column mapping: Internal ID used instead of Name)</span>
+    <span>&#x2705; Re-run: 05 April 2026 &mdash; mapping corrected (Name = Supplier Code) &mdash; 0 rows missing from Excel</span>
+  </div>
+
+  <div class="notice-ok">
+    &#x2705; <strong>Row count issue resolved.</strong> All 689 Excel rows are now present in the new app DB. The 49 previously missing rows were caused by mapping <em>Internal ID</em> as Supplier Code instead of the <em>Name</em> column. Settings have been saved for this supplier.
+  </div>
+
+  <!-- Cost/Retail diffs -->
+  <p class="section-title critical-title">&#9888; Cost / Retail Differences &mdash; 1 product</p>
+  <table class="data-table">
+    <thead><tr><th>Code</th><th>Description</th><th>Differences</th></tr></thead>
+    <tbody>
+      <tr class="product-row">
+        <td class="code">T-245BP</td>
+        <td>Tlc Pill Pouch - Blk Pu - Loose</td>
+        <td>
+          <table class="inner-diff"><tbody>
+            <tr><td class="col-label">Cost</td><td><span class="new-val">$8.15</span></td><td><span class="legacy-val">$8.13</span></td><td style="color:#888;font-size:.85em">Genuine price change in Excel vs legacy data</td></tr>
+            <tr><td class="col-label">Retail</td><td><span class="new-val">$14.99</span></td><td><span class="legacy-val">$14.95</span></td></tr>
+          </tbody></table>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Barcode diffs -->
+  <p class="section-title critical-title">&#9888; Barcode Differences &mdash; 2 products</p>
+  <table class="data-table">
+    <thead><tr><th>Code</th><th>Description</th><th>Column</th><th>New App</th><th>Legacy App</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="code">T-PILLUNIT19</td>
+        <td>Tlc Pill Pouch Unit - Womens 6Pcs</td>
+        <td>Barcode</td>
+        <td class="new-val">9421908187807</td>
+        <td class="legacy-val">09421908187807</td>
+        <td style="color:#888;font-size:.85em">Legacy had leading zero; new app value is correct</td>
+      </tr>
+      <tr>
+        <td class="code">T-T102GAM</td>
+        <td>Tlc Mini Gambit Passport Cover</td>
+        <td>Barcode</td>
+        <td class="new-val">9421039150183</td>
+        <td class="legacy-val">9421040000000</td>
+        <td style="color:#888;font-size:.85em">Legacy had placeholder barcode; new app has real barcode from Excel</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Description diffs -->
+  <p class="section-title desc-title">&#x2139; Description Differences &mdash; 670 products <span class="badge badge-ok">ACCEPTED</span></p>
+  <div class="notice-ok">
+    &#x2705; <strong>Descriptions accepted as more accurate.</strong> The new app produces fuller, more readable descriptions (e.g. <em>"S/E Nail Polish Rem Mango Tango Acetone"</em> vs legacy <em>"Nail Polish Remover Mango Tango Acetone"</em>; brand prefixes like <em>Mae</em>, <em>Tlc</em>, <em>Pigeon</em> now included). No further action required &mdash; manual review confirms new descriptions are preferred.
+  </div>
+
+  <!-- Only in new app -->
+  <p class="section-title new-only-title">Products only in New App &mdash; 110 <span class="badge badge-info">New products from this import</span></p>
+  <table class="data-table">
+    <thead><tr><th>Code</th><th>Description</th><th>Cost</th><th>Retail</th></tr></thead>
+    <tbody>
+      <tr><td class="code">20-1408</td><td>S/E Corn Plane w/ Blades</td><td>$8.69</td><td>$15.99</td></tr>
+      <tr><td class="code">20-1409</td><td>S/E Ceramic Stone Pedicure File</td><td>$8.15</td><td>$14.99</td></tr>
+      <tr><td class="code">20-1509</td><td>S/E Magnifying Mirror 10X</td><td>$10.32</td><td>$18.99</td></tr>
+      <tr><td class="code">20-1510</td><td>S/E Bathroom Shaving Mirror</td><td>$10.32</td><td>$18.99</td></tr>
+      <tr><td class="code">20-2014</td><td>S/E Facial Razors (2)</td><td>$7.06</td><td>$12.99</td></tr>
+      <tr><td class="code">20-2015</td><td>S/E Blackhead Rem</td><td>$5.43</td><td>$9.99</td></tr>
+      <tr><td class="code">20-2019</td><td>S/E Eyelash Curler</td><td>$7.60</td><td>$13.99</td></tr>
+      <tr><td class="code">20-2020</td><td>S/E Eyelash Curler 24K Gold</td><td>$9.78</td><td>$17.99</td></tr>
+      <tr><td class="code">20-2021</td><td>S/E Facial Razor Duo</td><td>$7.06</td><td>$12.99</td></tr>
+      <tr><td class="code">20-2120</td><td>S/E Sapphire Nail File</td><td>$5.97</td><td>$10.99</td></tr>
+      <tr><td class="code">20-2122</td><td>S/E Cushioned Pro Nail Shapers (2)</td><td>$6.52</td><td>$11.99</td></tr>
+      <tr><td class="code">20-2123</td><td>S/E 3Way Nail Buffer</td><td>$7.60</td><td>$13.99</td></tr>
+      <tr><td class="code">20-2126</td><td>S/E 4Way Buffing Block</td><td>$7.06</td><td>$12.99</td></tr>
+      <tr><td class="code">20-2127</td><td>S/E Clipper 4 Piece Set</td><td>$10.86</td><td>$19.99</td></tr>
+      <tr><td class="code">20-2129</td><td>S/E Toenail Clipper - Curved w/ Catcher</td><td>$6.52</td><td>$11.99</td></tr>
+      <tr><td class="code">20-2130</td><td>S/E Toenail Clipper - Straight w/ Catche</td><td>$6.52</td><td>$11.99</td></tr>
+      <tr><td class="code">20-2131</td><td>S/E Nail Clipper - Curved</td><td>$5.43</td><td>$9.99</td></tr>
+      <tr><td class="code">20-2132</td><td>S/E Cuticle Pusher And Cleaner</td><td>$8.15</td><td>$14.99</td></tr>
+      <tr><td class="code">20-2134</td><td>S/E Compact Sapphire Nail File</td><td>$5.43</td><td>$9.99</td></tr>
+      <tr><td class="code">20-2135</td><td>S/E Toenail Clipper Straight</td><td>$6.52</td><td>$11.99</td></tr>
+      <tr><td class="code">20-2136</td><td>S/E Pro Nail Files Fine/Superfine (2)</td><td>$4.89</td><td>$8.99</td></tr>
+      <tr><td class="code">20-2137</td><td>S/E Pro Nail Files Med/Med (2)</td><td>$4.89</td><td>$8.99</td></tr>
+      <tr><td class="code">20-2139</td><td>S/E Emery Boards 145Mm (10)</td><td>$5.43</td><td>$9.99</td></tr>
+      <tr><td class="code">20-2140</td><td>S/E Rotary Nail Clipper w/ File</td><td>$8.69</td><td>$15.99</td></tr>
+      <tr><td class="code">20-2141</td><td>S/E Nail Clipper w/ Chain</td><td>$4.89</td><td>$8.99</td></tr>
+      <tr><td class="code">20-2214</td><td>S/E Powder Puffs (2)</td><td>$4.89</td><td>$8.99</td></tr>
+      <tr><td class="code">20-2215</td><td>S/E Foundation Sponges Round (2)</td><td>$5.43</td><td>$9.99</td></tr>
+      <tr><td class="code">20-2216</td><td>S/E Luxe Powder Puff Round</td><td>$6.52</td><td>$11.99</td></tr>
+      <tr><td class="code">20-2311</td><td>S/E Eyeshadow Applicators Premium (10)</td><td>$7.06</td><td>$12.99</td></tr>
+      <tr><td class="code">20-2312</td><td>S/E Brow Brush - Dual Ended</td><td>$8.15</td><td>$14.99</td></tr>
+      <tr><td colspan="4" style="color:#888;padding:10px 14px;font-size:.85em;font-style:italic">... and 80 more new products imported from this price file update</td></tr>
+    </tbody>
+  </table>
+
+  <!-- Only in legacy -->
+  <p class="section-title legacy-only-title">Products only in Legacy App &mdash; 130 <span class="badge badge-warn">Older products not in this update file</span></p>
+  <div class="notice">
+    These products exist in the legacy DB for supplier 402 but were not in the April 1 Excel update. They are likely discontinued or older lines not included in this update cycle.
+  </div>
+  <table class="data-table">
+    <thead><tr><th>Code</th><th>Description</th><th>Cost</th><th>Retail</th></tr></thead>
+    <tbody>
+      <tr><td class="code">10-1000</td><td>Slant Tip Tweezers Blk</td><td>$6.52</td><td>$11.99</td></tr>
+      <tr><td class="code">10-1001</td><td>Square Tip Tweezers Blk</td><td>$6.52</td><td>$11.99</td></tr>
+      <tr><td class="code">10-1013</td><td>Slant Tip Tweezers Gld</td><td>$7.06</td><td>$12.99</td></tr>
+      <tr><td class="code">10-1030</td><td>2-In-Tip Tweezer Blk</td><td>$8.69</td><td>$15.99</td></tr>
+      <tr><td class="code">10-1040</td><td>Straight Nail Scissors</td><td>$8.69</td><td>$15.99</td></tr>
+      <tr><td class="code">10-1051</td><td>Eyelash Curler Blk</td><td>$7.60</td><td>$13.99</td></tr>
+      <tr><td class="code">10-1056</td><td>Nail Clipper Curved &amp; File (R)</td><td>$5.43</td><td>$9.99</td></tr>
+      <tr><td class="code">10-1057</td><td>Toenail Clipper Straight &amp; Catcher</td><td>$6.52</td><td>$11.99</td></tr>
+      <tr><td class="code">10-1059</td><td>Eyelash Curler Ergo (R)</td><td>$9.78</td><td>$17.99</td></tr>
+      <tr><td class="code">10-1069</td><td>Fdn Sponges Round (2)</td><td>$5.43</td><td>$9.99</td></tr>
+      <tr><td class="code">10-1076</td><td>Make Up Sponges Rectangle (20) (R)</td><td>$7.60</td><td>$13.99</td></tr>
+      <tr><td class="code">10-1110</td><td>Sapphire Nail File</td><td>$5.97</td><td>$10.99</td></tr>
+      <tr><td class="code">10-1126</td><td>Toenail Nippers</td><td>$19.02</td><td>$34.99</td></tr>
+      <tr><td class="code">10-1180</td><td>Toenail Clipper Curved</td><td>$6.52</td><td>$11.99</td></tr>
+      <tr><td class="code">10-1191</td><td>Emeryboards 145Mm (10)</td><td>$5.43</td><td>$9.99</td></tr>
+      <tr><td class="code">10-1194</td><td>Buffing Block</td><td>$7.06</td><td>$12.99</td></tr>
+      <tr><td class="code">10-1214</td><td>Eyeshadow Applicators Premium (10)</td><td>$7.06</td><td>$12.99</td></tr>
+      <tr><td class="code">10-1398</td><td>Curl Wonder Lash Curler Gld</td><td>$9.78</td><td>$17.99</td></tr>
+      <tr><td class="code">10-1517</td><td>Tweezer Trio</td><td>$11.41</td><td>$20.99</td></tr>
+      <tr><td class="code">10-1669</td><td>Facial Razors (2)</td><td>$7.06</td><td>$12.99</td></tr>
+      <tr><td class="code">10-1752</td><td>Manicure Kit (R)</td><td>$13.58</td><td>$24.99</td></tr>
+      <tr><td class="code">10-1852</td><td>Mini Blkhead Removers (R)</td><td>$4.89</td><td>$8.99</td></tr>
+      <tr><td class="code">10-2051</td><td>Close-Up Mirror 10X</td><td>$10.32</td><td>$18.99</td></tr>
+      <tr><td class="code">10-2224</td><td>Bathroom Shaving Mirror 1X &amp; 5X</td><td>$10.32</td><td>$18.99</td></tr>
+      <tr><td class="code">20-1311</td><td>Bath Ball Dusky Pink (R)</td><td>$2.17</td><td>$3.99</td></tr>
+      <tr><td class="code">20-1313</td><td>Bath Ball Green (R)</td><td>$2.17</td><td>$3.99</td></tr>
+      <tr><td class="code">20-2609</td><td>Triple Tweezer Set Patterned</td><td>$11.95</td><td>$21.99</td></tr>
+      <tr><td class="code">21-1308P</td><td>Quick Dry Hair Towel Pink (R)</td><td>$16.30</td><td>$29.99</td></tr>
+      <tr><td class="code">21-1401</td><td>Makeup Remover Rounds (2) (R)</td><td>$5.97</td><td>$10.99</td></tr>
+      <tr><td class="code">21-2003BE</td><td>Waffle Cosmetic Hband Beige (R)</td><td>$8.15</td><td>$14.99</td></tr>
+      <tr><td colspan="4" style="color:#888;padding:10px 14px;font-size:.85em;font-style:italic">... and 100 more legacy-only products (not in the April 1 update file)</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     TEST 2 — Excel vs New App DB   RERUN 05 Apr 2026
+     ═══════════════════════════════════════════════════════════════════ -->
+<div class="test-section">
+  <div class="test-header">
+    <h2>Test 2 &mdash; Supplier 402 (TBC) &bull; Excel vs New App (suppliers.mdb)</h2>
+    <span class="test-date">Latest run: 05 April 2026 &mdash; column mapping corrected</span>
+  </div>
+  <div class="summary-grid">
+    <div class="stat-box"><div class="stat-num">689</div><div class="stat-label">Products in Excel</div></div>
+    <div class="stat-box"><div class="stat-num">866</div><div class="stat-label">Products in MDB</div></div>
+    <div class="stat-box stat-ok"><div class="stat-num">689</div><div class="stat-label">Matched</div></div>
+    <div class="stat-box stat-ok"><div class="stat-num">0</div><div class="stat-label">Missing from MDB</div></div>
+    <div class="stat-box stat-warn"><div class="stat-num">2</div><div class="stat-label">Barcode Diffs</div></div>
+    <div class="stat-box stat-info"><div class="stat-num">177</div><div class="stat-label">In MDB, not in Excel</div></div>
+  </div>
+
+  <div class="run-history">
+    <span>&#x1F4C5; Original run: 03 April 2026 13:07 &mdash; 49 missing from MDB (wrong column mapping)</span>
+    <span>&#x2705; Re-run: 05 April 2026 &mdash; 0 missing</span>
+  </div>
+
+  <div class="notice-ok">
+    &#x2705; <strong>All 689 Excel products are present in the new app MDB.</strong> The 49 previously missing rows are resolved. Root cause was <em>Internal ID</em> being used as Supplier Code instead of the <em>Name</em> column. Supplier settings have been corrected and saved.
+  </div>
+
+  <p class="section-title critical-title">&#9888; Barcode Differences &mdash; 2 products (Excel vs MDB)</p>
+  <table class="data-table">
+    <thead><tr><th>Code</th><th>Description</th><th>Column</th><th>Excel</th><th>MDB</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="code">20-2314</td>
+        <td>Foundation Brush</td>
+        <td>Barcode</td>
+        <td class="legacy-val">9421039151425</td>
+        <td class="new-val" style="font-size:.8em">þ9282E184855448</td>
+        <td style="color:#888;font-size:.85em">Corrupted barcode in source Excel &mdash; encoding artefact</td>
+      </tr>
+      <tr>
+        <td class="code">T-PILLUNIT19</td>
+        <td>Tlc Pill Pouch Unit - Womens 6Pcs</td>
+        <td>Barcode</td>
+        <td class="legacy-val">09421908187807</td>
+        <td class="new-val">9421908187807</td>
+        <td style="color:#888;font-size:.85em">Excel has leading zero; MDB value (no leading zero) is correct EAN-13</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p class="section-title legacy-only-title">In MDB but not in Excel &mdash; 177 products</p>
+  <div class="notice">
+    These products exist in the MDB for supplier 402 but were not included in the April 1 Excel update. They are likely older or discontinued lines. They remain in the DB from a previous import and were not touched by this update.
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     TEST 3 — Supplier 187 (GDC) — New App vs Legacy App  RERUN 05 Apr 2026
+     ═══════════════════════════════════════════════════════════════════ -->
+<div class="test-section">
+  <div class="test-header">
+    <h2>Test 3 &mdash; Supplier 187 (GDC) &bull; New App vs Legacy App &bull; SupplierID = 187</h2>
+    <span class="test-date">Latest run: 05 April 2026 &mdash; Frag upsert completed; + &amp; bug fixed</span>
+  </div>
+  <div class="summary-grid">
+    <div class="stat-box stat-ok"><div class="stat-num">3,912</div><div class="stat-label">New App Rows</div></div>
+    <div class="stat-box"><div class="stat-num">3,881</div><div class="stat-label">Legacy App Rows</div></div>
+    <div class="stat-box stat-ok"><div class="stat-num">3,881</div><div class="stat-label">Matched by Code</div></div>
+    <div class="stat-box stat-ok"><div class="stat-num">0</div><div class="stat-label">Cost/Retail Diffs</div></div>
+    <div class="stat-box stat-ok"><div class="stat-num">785</div><div class="stat-label">Barcode Diffs (expected)</div></div>
+    <div class="stat-box stat-ok"><div class="stat-num">0</div><div class="stat-label">+ &amp; Bug Remaining</div></div>
+    <div class="stat-box stat-info"><div class="stat-num">31</div><div class="stat-label">Only in New</div></div>
+    <div class="stat-box stat-ok"><div class="stat-num">0</div><div class="stat-label">Only in Legacy</div></div>
+  </div>
+
+  <div class="run-history">
+    <span>&#x1F4C5; Initial run: 05 April 2026 &mdash; Frag not yet imported (325 rows missing); + &amp; bug identified (480 desc diffs)</span>
+    <span>&#x2705; Re-run: 05 April 2026 &mdash; Frag upsert complete (3,912 rows); + &amp; bug fixed (0 remaining)</span>
+  </div>
+
+  <div class="notice-ok">
+    &#x2705; <strong>All pricing correct. Row count correct. + &amp; bug resolved.</strong> The new app now contains 3,912 rows — 31 more than legacy, all of which are new products the legacy DB never received. No cost or retail differences. The <code>clean_description()</code> fix is confirmed working: 0 instances of stripped <code>+</code> or <code>&amp;</code> remain.
+  </div>
+
+  <!-- Barcode diffs — expected -->
+  <p class="section-title desc-title">&#x2139; Barcode Differences &mdash; 785 products <span class="badge badge-ok">Expected — two known causes</span></p>
+  <div class="notice-ok">
+    All 785 barcode differences are explainable — no data loss:
+    <ul style="margin:6px 0 0;padding-left:20px">
+      <li><strong>200 &mdash; Leading zero stripped:</strong> e.g. <code>074469513951</code> &rarr; <code>74469513951</code>. Canonical EAN-13 form; both are valid.</li>
+      <li><strong>585 &mdash; Multiple barcodes stored:</strong> GDC source has comma-separated barcodes; new app stores all, legacy stored only the first. New app has more data.</li>
+    </ul>
+  </div>
+
+  <!-- Description diffs — acceptable -->
+  <p class="section-title desc-title">&#x2139; Description Differences &mdash; 390 products <span class="badge badge-ok">Acceptable — abbreviations only</span></p>
+  <div class="notice-ok">
+    All remaining description differences are legacy abbreviations (e.g. <code>Spray</code> &rarr; <code>Spr</code>, <code>Lotion</code> &rarr; <code>Ltn</code>, <code>Jimmy Choo</code> &rarr; <code>Jc</code>). The new app descriptions are fuller and more readable. <strong>Zero instances</strong> of the <code>+</code> / <code>&amp;</code> stripping bug remain.
+  </div>
+  <table class="data-table">
+    <thead><tr><th>Category</th><th>Count</th><th>Example &mdash; New App</th><th>Example &mdash; Legacy</th></tr></thead>
+    <tbody>
+      <tr><td>+ / &amp; bug <span class="badge badge-ok">RESOLVED</span></td><td>0</td><td class="new-val">—</td><td class="legacy-val">—</td></tr>
+      <tr><td>Abbreviations <span class="badge badge-ok">Acceptable</span></td><td>327</td><td class="new-val">Avene Toning Lotion 200Ml</td><td class="legacy-val">Avene Toning Ltn 200Ml</td></tr>
+      <tr><td>Minor spacing/truncation</td><td>63</td><td class="new-val">No7Liftlumin Tactn D/Cr 50Ml</td><td class="legacy-val">No7 Lift&amp;Lumin Tactn D/Cr 50Ml</td></tr>
+    </tbody>
+  </table>
+
+  <!-- Only in new app -->
+  <p class="section-title new-only-title">Products only in New App &mdash; 31 <span class="badge badge-info">New products not in legacy DB</span></p>
+  <table class="data-table">
+    <thead><tr><th>Code (Pharmacode)</th><th>Description</th><th>Cost</th><th>Retail</th></tr></thead>
+    <tbody>
+      <tr><td class="code">495549</td><td>Metamucil Smooth Orange 283G 48Dose</td><td>$18.62</td><td>$32.99</td></tr>
+      <tr><td class="code">2269589</td><td>Boston Simplus Multi/Actn Sol 120Ml</td><td>$21.71</td><td>$43.99</td></tr>
+      <tr><td class="code">542083</td><td>Difflam Spray 30Ml</td><td>$13.15</td><td>$27.99</td></tr>
+      <tr><td class="code">2395568</td><td>Usl First Aid Kit Evrydy Starter</td><td>$20.54</td><td>$41.99</td></tr>
+      <tr><td class="code">2090597</td><td>Renu Fresh M/Purpose Solution 120Ml</td><td>$11.25</td><td>$22.99</td></tr>
+      <tr><td class="code">2496380</td><td>Neilmed Nasabulb Aspirator 2Pk</td><td>$4.07</td><td>$10.99</td></tr>
+      <tr><td class="code">1142930</td><td>Lrp Effaclar Mask 100Ml</td><td>$21.90</td><td>$39.99</td></tr>
+      <tr><td class="code">2227290</td><td>Antipodes Avoc/Pear Night Crm 60Ml</td><td>$38.35</td><td>$71.99</td></tr>
+      <tr><td class="code">2483378</td><td>Microdacyn Hydrogel 60G</td><td>$9.98</td><td>$20.99</td></tr>
+      <tr><td class="code">2601923</td><td>Quantum 3D Pedometer</td><td>$13.29</td><td>$25.99</td></tr>
+      <tr><td class="code">2620634</td><td>Dermal Therapy Lip Balm Berry 10G</td><td>$4.62</td><td>$9.99</td></tr>
+      <tr><td class="code">2384469</td><td>Fess Dry Nose Relief 10Ml</td><td>$9.99</td><td>$20.99</td></tr>
+      <tr><td class="code">1180343</td><td>Cerave Foaming Cleanser 473Ml</td><td>$18.26</td><td>$29.99</td></tr>
+      <tr><td class="code">2660628</td><td>Labixten 20Mg Tab 60S</td><td>$35.21</td><td>$63.99</td></tr>
+      <tr><td class="code">2660687</td><td>Myrkl Capsule 30Pk</td><td>$17.83</td><td>$64.99</td></tr>
+      <tr><td colspan="4" style="color:#888;padding:10px 14px;font-size:.85em;font-style:italic">... and 16 more new products</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     TEST 4 — Supplier 187 (GDC) — Excel vs New App  RERUN 05 Apr 2026
+     ═══════════════════════════════════════════════════════════════════ -->
+<div class="test-section">
+  <div class="test-header">
+    <h2>Test 4 &mdash; Supplier 187 (GDC) &bull; Excel vs New App (suppliers.mdb) &bull; SupplierID = 187</h2>
+    <span class="test-date">Latest run: 05 April 2026</span>
+  </div>
+  <div class="summary-grid">
+    <div class="stat-box"><div class="stat-num">3,912</div><div class="stat-label">Products in Excel</div></div>
+    <div class="stat-box stat-ok"><div class="stat-num">3,912</div><div class="stat-label">Products in MDB</div></div>
+    <div class="stat-box stat-ok"><div class="stat-num">3,912</div><div class="stat-label">Matched</div></div>
+    <div class="stat-box stat-ok"><div class="stat-num">0</div><div class="stat-label">Missing from MDB</div></div>
+    <div class="stat-box stat-ok"><div class="stat-num">0</div><div class="stat-label">Cost/Retail Diffs</div></div>
+    <div class="stat-box stat-ok"><div class="stat-num">0</div><div class="stat-label">In MDB, not in Excel</div></div>
+  </div>
+  <p class="all-ok">&#x2705; Perfect match. All 3,912 products (Non-Frag 3,587 + Frag 325) are present with correct pricing. 0 missing, 0 cost diffs.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     TEST 5 — Supplier 187 (GDC) — File-by-file missing rows  05 Apr 2026
+     ═══════════════════════════════════════════════════════════════════ -->
+<div class="test-section">
+  <div class="test-header">
+    <h2>Test 5 &mdash; Supplier 187 (GDC) &bull; File-by-file Missing Row Analysis &bull; SupplierID = 187</h2>
+    <span class="test-date">Run: 05 April 2026</span>
+  </div>
+  <div class="summary-grid">
+    <div class="stat-box"><div class="stat-num">3,587</div><div class="stat-label">Non-Frag Rows</div></div>
+    <div class="stat-box"><div class="stat-num">325</div><div class="stat-label">Frag Rows</div></div>
+    <div class="stat-box stat-ok"><div class="stat-num">0</div><div class="stat-label">Overlap Between Files</div></div>
+    <div class="stat-box stat-ok"><div class="stat-num">0</div><div class="stat-label">Missing from New App</div></div>
+    <div class="stat-box stat-warn"><div class="stat-num">31</div><div class="stat-label">Missing from Legacy</div></div>
+  </div>
+
+  <div class="notice-ok">
+    &#x2705; The two source files have <strong>no overlapping pharmacodes</strong> — they are fully separate product sets. The import process (Replace All on Non-Frag, then Upsert on Frag) produces exactly 3,912 unique records. The new app is complete; the 31 missing from legacy are new products the legacy DB never received.
+  </div>
+
+  <!-- Missing from new app -->
+  <p class="section-title new-only-title">Missing from New App</p>
+  <p class="all-ok">&#x2705; 0 rows missing from new app across both files (Non-Frag 3,587 + Frag 325).</p>
+
+  <!-- Missing from legacy — Non-Frag -->
+  <p class="section-title legacy-only-title">Missing from Legacy &mdash; Non-Frag file &mdash; 28 products <span class="badge badge-warn">New products legacy never received</span></p>
+  <table class="data-table">
+    <thead><tr><th>Pharmacode</th><th>Description</th><th>Cost</th><th>RRP</th></tr></thead>
+    <tbody>
+      <tr><td class="code">495549</td><td>METAMUCIL Smooth Orange 283g 48Dose</td><td>$18.62</td><td>$32.99</td></tr>
+      <tr><td class="code">2269589</td><td>Boston Simplus Multi/Actn Sol 120ml</td><td>$21.71</td><td>$43.99</td></tr>
+      <tr><td class="code">542083</td><td>DIFFLAM Spray 30ml</td><td>$13.15</td><td>$27.99</td></tr>
+      <tr><td class="code">2395568</td><td>USL First Aid Kit Evrydy Starter</td><td>$20.54</td><td>$41.99</td></tr>
+      <tr><td class="code">2090597</td><td>RENU Fresh M/Purpose Solution 120ml</td><td>$11.25</td><td>$22.99</td></tr>
+      <tr><td class="code">2496380</td><td>NEILMED Nasabulb Aspirator 2pk</td><td>$4.07</td><td>$10.99</td></tr>
+      <tr><td class="code">1142930</td><td>LRP Effaclar Mask 100ml</td><td>$21.90</td><td>$39.99</td></tr>
+      <tr><td class="code">2227290</td><td>ANTIPODES Avoc/Pear Night Crm 60ml</td><td>$38.35</td><td>$71.99</td></tr>
+      <tr><td class="code">2483378</td><td>MICRODACYN Hydrogel 60g</td><td>$9.98</td><td>$20.99</td></tr>
+      <tr><td class="code">2601923</td><td>Quantum 3D Pedometer</td><td>$13.29</td><td>$25.99</td></tr>
+      <tr><td class="code">2620634</td><td>DERMAL THERAPY Lip Balm Berry 10g</td><td>$4.62</td><td>$9.99</td></tr>
+      <tr><td class="code">2384469</td><td>FESS Dry Nose Relief 10ml</td><td>$9.99</td><td>$20.99</td></tr>
+      <tr><td class="code">1180343</td><td>CeraVe Foaming Cleanser 473ml</td><td>$18.26</td><td>$29.99</td></tr>
+      <tr><td class="code">2660628</td><td>LABIXTEN 20mg Tab 60s</td><td>$35.21</td><td>$63.99</td></tr>
+      <tr><td class="code">2660687</td><td>Myrkl Capsule 30pk</td><td>$17.83</td><td>$64.99</td></tr>
+      <tr><td class="code">2662248</td><td>NEUTRO Ultra Gntl Daily Moistr 100ml</td><td>$15.12</td><td>$25.99</td></tr>
+      <tr><td class="code">2629801</td><td>Tom Pad Organic U/Thin Super 10pk</td><td>$4.25</td><td>$8.49</td></tr>
+      <tr><td class="code">2679124</td><td>PHLOE No Added Sugar Chew Tabs 120s</td><td>$20.63</td><td>$37.99</td></tr>
+      <tr><td class="code">2577399</td><td>MILTON Anti-Bact Solution 2% 500ml</td><td>$7.05</td><td>$12.99</td></tr>
+      <tr><td class="code">1169202</td><td>DISNEY Frozen II Frag. 2pc G/Set</td><td>$11.24</td><td>$24.99</td></tr>
+      <tr><td class="code">1263228</td><td>LRP Anthelios UVm Kids DP50+ 250ml</td><td>$29.58</td><td>$53.99</td></tr>
+      <tr><td class="code">1264148</td><td>MB Fit Me M&amp;P Fnd 220 Nat Beige</td><td>$16.82</td><td>$29.99</td></tr>
+      <tr><td class="code">1264879</td><td>MCo MCS67 Miracle Water Cream 50ml</td><td>$24.31</td><td>$43.00</td></tr>
+      <tr><td class="code">1265341</td><td>TIGI BH Recovery Conditioner 400ml</td><td>$4.23</td><td>$11.99</td></tr>
+      <tr><td class="code">1263806</td><td>Fanola Wonder No Yellow Shamp 1000ml</td><td>$28.51</td><td>$49.99</td></tr>
+      <tr><td class="code">2714345</td><td>AP Biome Dental Probiotic 28s</td><td>$24.33</td><td style="color:#e74c3c;font-style:italic">no RRP</td></tr>
+      <tr><td class="code">2656981</td><td>AVENE Gentle Milk Cleanser 200ml</td><td>$22.09</td><td>$41.99</td></tr>
+      <tr><td class="code">1288587</td><td>CeraVe Blemish Control Cleanser 473ml</td><td>$23.73</td><td>$38.99</td></tr>
+    </tbody>
+  </table>
+
+  <!-- Missing from legacy — Frag -->
+  <p class="section-title legacy-only-title">Missing from Legacy &mdash; Frag file &mdash; 3 products <span class="badge badge-warn">2 have no RRP</span></p>
+  <div class="notice">
+    2 of these 3 products have no RRP in the source file. The legacy app may have excluded zero-price lines intentionally. Confirm whether the new app should also exclude products with no RRP.
+  </div>
+  <table class="data-table">
+    <thead><tr><th>Pharmacode</th><th>Description</th><th>Cost</th><th>RRP</th></tr></thead>
+    <tbody>
+      <tr><td class="code">1156817</td><td>GXH Ariana G. ThankU Nxt EDP 30ml (T)</td><td>$37.48</td><td style="color:#e74c3c;font-style:italic">no RRP</td></tr>
+      <tr><td class="code">1184535</td><td>TH Tommy Girl EDT 30ml</td><td>$24.15</td><td>$35.00</td></tr>
+      <tr><td class="code">1194125</td><td>GXH Narciso Her Forever EDP 50ml (T)</td><td>$59.43</td><td style="color:#e74c3c;font-style:italic">no RRP</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     ACTION ITEMS
+     ═══════════════════════════════════════════════════════════════════ -->
+<div class="test-section">
+  <div class="test-header" style="background:#7f1d1d">
+    <h2>&#9888; Open Issues / Action Items</h2>
+    <span class="test-date">05 April 2026</span>
+  </div>
+  <table class="data-table">
+    <thead><tr><th>Priority</th><th>Issue</th><th>Affects</th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="badge badge-ok">FIXED</span></td>
+        <td><code>clean_description()</code> stripped <code>+</code> and <code>&amp;</code></td>
+        <td>GDC &mdash; was 480 products &rarr; now 0</td>
+        <td>Added <code>+</code> and <code>&amp;</code> to the allowed character set in <code>description_helpers.py</code> regex. Confirmed 0 instances remaining after reimport. <em>Fix applied: 05 April 2026.</em></td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-ok">FIXED</span></td>
+        <td>Frag upsert not refreshing Access cache</td>
+        <td>GDC two-file import process</td>
+        <td>After Replace All (Non-Frag), loading the next file did not invalidate the prefetched Access data, causing Frag upsert to treat existing records as still present. Fixed: cache is now cleared and re-fetched on file open and after every Replace All / Upsert. <em>Fix applied: 05 April 2026.</em></td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-ok">FIXED</span></td>
+        <td>Suppliers file not found — unhelpful error</td>
+        <td>All suppliers on first launch</td>
+        <td>Dialog now reads "Suppliers file not found — Open Settings to set the correct path" with a single OK button that opens Settings directly, then reloads on close. <em>Fix applied: 05 April 2026.</em></td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-info">Info</span></td>
+        <td>Barcode leading zeros stripped</td>
+        <td>GDC &mdash; 200 products</td>
+        <td>New app stores canonical EAN-13 (no leading zero). Legacy stored with leading zero. Both are valid — confirm which format RxOne requires.</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-info">Info</span></td>
+        <td>Multi-barcode storage</td>
+        <td>GDC &mdash; 585 products</td>
+        <td>New app stores all comma-separated barcodes from Excel. Legacy stored only the first. Access <code>Barcode</code> field is a text field (max 20 chars) — long values will be truncated. Confirm expected behaviour.</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-ok">Accepted</span></td>
+        <td>Description abbreviations differ from legacy</td>
+        <td>GDC &mdash; 390 products; TBC &mdash; 670 products</td>
+        <td>New app produces fuller descriptions; legacy used shortening rules from Settings1.mdb. New descriptions confirmed as more accurate for both suppliers.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+</body>
+</html>

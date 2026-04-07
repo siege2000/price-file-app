@@ -159,7 +159,15 @@ def save_specials(
         saved = 0
         for _, r in df.iterrows():
             barcode     = str(r.get("Barcode", "") or "").strip()
-            description = str(r.get("Description", "") or "").strip()[:40]
+            description = str(r.get("Description", "") or "").strip()
+            if len(description) > 40:
+                cur.execute(
+                    "SELECT [Description] FROM Details WHERE [PharmaCode] = ?", barcode
+                )
+                detail_row = cur.fetchone()
+                if detail_row and detail_row[0]:
+                    description = str(detail_row[0]).strip()
+            description = description[:40]
             combo       = _is_yes(r.get("Combo", ""))
             multibuy    = _parse_multibuy(str(r.get("MultiBuy Qty", "") or ""), combo)
             multi_retail = str(r.get("Multi Retail", "") or "").strip()

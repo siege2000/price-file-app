@@ -367,9 +367,71 @@
     <!-- SPECIALS -->
     <div class="section" id="specials">
       <h2>Specials files</h2>
-      <p>At the top of the app, switch the mode to <strong>Specials File</strong> to process a supplier specials promotion file.</p>
-      <p>The Specials workflow has its own column mapping rules per brand, stored in <code>brand_import_mappings.json</code>. If a brand's specials file uses a different layout from what the app expects, contact your supervisor to update the mapping.</p>
-      <p>The Specials mode also includes a <strong>Stock Card</strong> lookup that searches the Healthsoft database by barcode — useful for confirming a product exists before adding a special.</p>
+      <p>Switch the mode to <strong>Specials File</strong> using the toggle at the top of the app to process a supplier specials promotion file.</p>
+
+      <h3>Importing a specials file</h3>
+      <ol class="steps">
+        <li>
+          <div class="step-n">1</div>
+          <div class="step-text">
+            <strong>Select the brand</strong>
+            <span>Choose the supplier brand from the Brand dropdown. If a mapping exists for this brand in <kbd>brand_import_mappings.json</kbd>, column assignments will be applied automatically on import.</span>
+          </div>
+        </li>
+        <li>
+          <div class="step-n">2</div>
+          <div class="step-text">
+            <strong>Open the specials file</strong>
+            <span>Click <strong>Import…</strong> and browse to the supplier's Excel or CSV file. The app reads the file and populates the specials grid with one row per product.</span>
+          </div>
+        </li>
+        <li>
+          <div class="step-n">3</div>
+          <div class="step-text">
+            <strong>Check the columns panel</strong>
+            <span>On the right panel, verify the column assignments (Barcode, Description, Special Price, MultiBuy Qty, etc.). For mapped brands these will be pre-filled. Adjust any that are incorrect using the dropdowns.</span>
+          </div>
+        </li>
+        <li>
+          <div class="step-n">4</div>
+          <div class="step-text">
+            <strong>Review the grid</strong>
+            <span>Check that barcodes, descriptions, prices, and group IDs look correct. Descriptions longer than 40 characters will be resolved automatically from the product master when saved — you will see the full source description in the grid for review purposes.</span>
+          </div>
+        </li>
+        <li>
+          <div class="step-n">5</div>
+          <div class="step-text">
+            <strong>Set the Special Name and dates</strong>
+            <span>Enter the Special Name, Start Date, and Finish Date in the bottom bar. For mapped brands these may be pre-filled from the first row of the file.</span>
+          </div>
+        </li>
+        <li>
+          <div class="step-n">6</div>
+          <div class="step-text">
+            <strong>Save to database</strong>
+            <span>Click <strong>Save Special</strong>. The app writes the special header to the <code>Specials</code> table and all products to <code>SpecialItems</code>. Descriptions longer than 40 characters are resolved from the product master (<code>Details</code> table) automatically at this point.</span>
+          </div>
+        </li>
+      </ol>
+
+      <h3>Brand mappings</h3>
+      <p>Per-brand column mapping rules are stored in <kbd>brand_import_mappings.json</kbd>, which sits in the same folder as <kbd>PriceFileApp.exe</kbd>. This file can be opened and edited in any text editor — changes take effect next time the app starts, with no rebuild required.</p>
+      <div class="tip">
+        <span class="icon">✅</span>
+        <span>To add a new brand or update an existing mapping, open <kbd>brand_import_mappings.json</kbd> next to the exe in Notepad or VS Code. See the <strong>Specials Brand Mapping Guide</strong> (a separate help file) for full instructions and examples.</span>
+      </div>
+
+      <h3>Description handling</h3>
+      <p>The RxOne <code>SpecialItems.Description</code> field is limited to 40 characters. When a product's description from the supplier file is longer than 40 characters, the app automatically looks it up in the <code>Details</code> product master (matched by barcode). The master description is used instead. If the product is not yet in the database, the description is truncated to 40 characters as a fallback.</p>
+
+      <h3>Stock Card lookup</h3>
+      <p>The Specials mode includes a <strong>Stock Card</strong> button on each grid row. Clicking it opens a search dialog that queries the Healthsoft SQL Server database by barcode or description — useful for confirming a product exists and checking its current details before adding a special.</p>
+
+      <div class="note">
+        <span class="icon">ℹ️</span>
+        <span>The Stock Card lookup requires a connection to the Healthsoft SQL Server. If the server is unavailable, the button will show an error but the rest of the specials workflow will continue to function normally.</span>
+      </div>
     </div>
 
     <!-- FAQ -->

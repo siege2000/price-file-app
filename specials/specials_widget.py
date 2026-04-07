@@ -94,7 +94,12 @@ _EXCEL_TO_GRID: dict[str, str] = {
 
 
 # ── Brand import mappings (brand_import_mappings.json) ───────────────────────
-_MAPPINGS_PATH = os.path.join(os.path.dirname(__file__), "brand_import_mappings.json")
+# Resolved relative to the exe (or project root in dev) so users can edit it
+# without a rebuild.  Falls back to the legacy bundled copy for backwards compat.
+import config as _config
+_MAPPINGS_PATH = os.path.join(_config.base_path(), "brand_import_mappings.json")
+if not os.path.exists(_MAPPINGS_PATH):
+    _MAPPINGS_PATH = os.path.join(os.path.dirname(__file__), "brand_import_mappings.json")
 
 def _load_brand_mappings() -> dict:
     try:
@@ -868,7 +873,7 @@ class SpecialsWidget(QWidget):
             else:
                 barcode = barcode.replace('"', '').replace(' ', '')
 
-            desc = clean(str(desc_s.iloc[i]))[:40]
+            desc = clean(str(desc_s.iloc[i]))
 
             # ── SpecialRetail / SpecialPercent ────────────────────────────────
             # Rule: if Product price has a value → SpecialRetail (dollar string)

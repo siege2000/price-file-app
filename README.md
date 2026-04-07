@@ -207,14 +207,14 @@ PyInstaller does not copy writable data files. After the build, copy these into 
 
 ```
 dist\PriceFileApp\
-  PriceFileApp.exe        ← built by PyInstaller
-  _internal\              ← PyInstaller internals (do not modify)
-  settings.ini            ← copy from project root, edit for the target site
-  data\                   ← copy entire folder from project root
-    templates.json
-    supplier_rules.json
-    supplier_settings.json
-    replacements.csv
+  PriceFileApp.exe               ← built by PyInstaller
+  _internal\                     ← PyInstaller internals (do not modify)
+  settings.ini                   ← copy from project root, edit for the target site
+  brand_import_mappings.json     ← copy from specials\ — edit to add new brands without rebuilding
+  templates.json                 ← copy from data\
+  supplier_rules.json            ← copy from data\
+  supplier_settings.json         ← copy from data\  (auto-created on first save if absent)
+  replacements.csv               ← copy from data\  (optional — user can also load via file dialog)
 ```
 
 Edit `settings.ini` for the target site before shipping:

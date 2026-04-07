@@ -16,13 +16,10 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[
-        # Specials module config — resolved via __file__ at runtime, must be
-        # bundled into _internal/specials/ alongside the frozen module.
-        ('specials/brand_import_mappings.json', 'specials'),
-        # Note: settings.ini, help.html and the data/ folder are NOT bundled
-        # here because the app resolves them relative to the exe directory
-        # (os.path.dirname(sys.executable)).  Copy those manually after the
-        # build — see the README Distribution section.
+        # Note: settings.ini, help.html, data/, and brand_import_mappings.json
+        # are NOT bundled here because the app resolves them relative to the exe
+        # directory (os.path.dirname(sys.executable)).  Copy those manually after
+        # the build — see the README Distribution section.
     ],
     hiddenimports=[
         'pyodbc',

@@ -353,7 +353,7 @@
       <div class="card">
         <div class="icon">🎁</div>
         <h3>Specials File Workflow</h3>
-        <p>A separate mode handles supplier specials files, with per-brand column mapping rules and a stock barcode lookup that queries the Healthsoft SQL Server database in real time.</p>
+        <p>A separate mode handles supplier specials promotions. Per-brand column mapping rules are stored in <kbd style="background:#f0f3f8;border:1px solid #cdd5e0;border-radius:3px;padding:1px 6px;font-size:13px">brand_import_mappings.json</kbd> — a plain text file that sits next to the exe and can be edited without a rebuild to add new brands. Descriptions exceeding the 40-character field limit are automatically resolved from the product master. Includes a real-time stock barcode lookup via the Healthsoft SQL Server.</p>
       </div>
 
     </div>
@@ -453,7 +453,7 @@
         <tr>
           <td>Supplier Templates</td>
           <td>JSON files</td>
-          <td>templates.json, supplier_settings.json, and supplier_rules.json store all per-supplier configuration</td>
+          <td>templates.json, supplier_settings.json, and supplier_rules.json store all per-supplier configuration. brand_import_mappings.json (specials brand column rules) sits next to the exe and is editable without rebuild.</td>
         </tr>
         <tr>
           <td>Alternative Interface</td>

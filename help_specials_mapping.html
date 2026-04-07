@@ -251,6 +251,7 @@
       <a href="#file-location">File location</a>
       <a href="#how-it-works">How it works</a>
       <a href="#columns-ref">Columns reference</a>
+      <a href="#description-fallback">Description fallback</a>
       <a href="#rules-ref">Rules reference</a>
       <a href="#add-brand">Adding a new brand</a>
       <a href="#example">Full example (GXH)</a>
@@ -289,14 +290,17 @@
     <div class="section" id="file-location">
       <h2>File location</h2>
       <p>
-        The file is bundled inside the application at:
+        <kbd>brand_import_mappings.json</kbd> sits in the same folder as <kbd>PriceFileApp.exe</kbd>:
       </p>
-      <pre><span class="str">specials/brand_import_mappings.json</span></pre>
+      <pre><span class="str">brand_import_mappings.json</span>   <span class="comment">← same level as PriceFileApp.exe</span></pre>
       <p>
-        Because it is bundled inside the <kbd>.exe</kbd>, you must edit it in the source project
-        and rebuild to apply changes in a deployed installation.
-        Open the file in any text editor &mdash; it is plain JSON.
+        The file is not bundled inside the <kbd>.exe</kbd> &mdash; it lives alongside it in the
+        application folder and can be opened and edited with any text editor at any time.
       </p>
+      <div class="tip">
+        <span class="icon">&#10003;</span>
+        <div>No rebuild needed &mdash; changes take effect next time the app loads the file.</div>
+      </div>
       <div class="warn">
         <span class="icon">&#9888;</span>
         <div>JSON is strict about syntax. Use a code editor such as VS Code for editing; it will flag any missing commas, mismatched brackets, or stray characters before you save.</div>
@@ -386,7 +390,7 @@
           <tr>
             <td><code>description</code></td>
             <td>Description</td>
-            <td>Product name. Truncated to 40 characters to match the RxOne field limit.</td>
+            <td>Product name. If the description from the source file exceeds 40 characters, the app automatically looks up the product master description from the <code>Details</code> table (matched by barcode) and uses that instead. If no match is found, the description is truncated to 40 characters.</td>
           </tr>
           <tr>
             <td><code>pos_note</code></td>
@@ -447,6 +451,53 @@
           All roles are optional. If a role is omitted, the app falls back to known header names and then to the manual combo position.
           You only need to include the roles where the supplier's column name differs from the built-in defaults.
         </div>
+      </div>
+    </div>
+
+    <!-- DESCRIPTION FALLBACK -->
+    <div class="section" id="description-fallback">
+      <h2>Description fallback &mdash; product master lookup</h2>
+      <p>
+        The <code>SpecialItems.Description</code> field in RxOne is limited to 40 characters.
+        Supplier specials files often contain longer product names (up to 60 characters in tested files).
+      </p>
+      <p>
+        When saving a special, if a product's description exceeds 40 characters, the app automatically
+        queries the <strong>Details</strong> table in <kbd>suppliers.mdb</kbd> to find the product master
+        description &mdash; matching on barcode / pharmacode. The master description is typically already within
+        the 40-character limit and uses the standard RxOne abbreviation style.
+      </p>
+      <p>The lookup follows this priority:</p>
+      <ol class="steps">
+        <li>
+          <div class="step-n">1</div>
+          <div class="step-text">
+            <strong>Source description &le; 40 chars</strong>
+            <span>Used as-is. No lookup is performed.</span>
+          </div>
+        </li>
+        <li>
+          <div class="step-n">2</div>
+          <div class="step-text">
+            <strong>Source description &gt; 40 chars &rarr; Details lookup</strong>
+            <span>The app queries <code>SELECT Description FROM Details WHERE PharmaCode = [barcode]</code>. If a match is found and the result is non-empty, it is used as the description (still capped at 40 chars for safety).</span>
+          </div>
+        </li>
+        <li>
+          <div class="step-n">3</div>
+          <div class="step-text">
+            <strong>No Details match &rarr; truncate source</strong>
+            <span>If no product master record is found, the source description is truncated to 40 characters. This is a last resort and will only occur for products that do not yet exist in the RxOne database.</span>
+          </div>
+        </li>
+      </ol>
+      <div class="tip">
+        <span class="icon">&#10003;</span>
+        <div>In testing against the Vantage March 2026 special (103 products), all 26 products with descriptions longer than 40 characters resolved successfully from the Details table. No truncation fallback was required.</div>
+      </div>
+      <div class="note">
+        <span class="icon">&#8505;</span>
+        <div>The fallback only applies when <em>saving</em> to the database. The full source description is shown in the specials grid so you can review it before saving.</div>
       </div>
     </div>
 
@@ -591,8 +642,8 @@
         <li>
           <div class="step-n">3</div>
           <div class="step-text">
-            <strong>Open <kbd>specials/brand_import_mappings.json</kbd> in a text editor</strong>
-            <span>Add a new entry before the closing <code>}</code> of the file. Separate it from the previous entry with a comma.</span>
+            <strong>Open <kbd>brand_import_mappings.json</kbd> in a text editor</strong>
+            <span>This file sits in the same folder as <kbd>PriceFileApp.exe</kbd>. Open it with any text editor &mdash; Notepad works, VS Code is preferred for syntax highlighting.</span>
           </div>
         </li>
         <li>
@@ -605,8 +656,8 @@
         <li>
           <div class="step-n">5</div>
           <div class="step-text">
-            <strong>Save and rebuild</strong>
-            <span>For the change to appear in the <kbd>.exe</kbd>, run PyInstaller to create a new build. In development the change takes effect immediately on next app launch.</span>
+            <strong>Save the file</strong>
+            <span>Save the JSON file. The next time the app starts, the new brand mapping will be available in the Import Specials screen &mdash; no rebuild required.</span>
           </div>
         </li>
       </ol>
@@ -730,7 +781,7 @@
           <div class="step-n">3</div>
           <div class="step-text">
             <strong>Description</strong>
-            <span>Read from <em>Product name</em>, truncated to 40 characters.</span>
+            <span>Read from <em>Product name</em>. If the source description exceeds 40 characters, the app looks up the product master in the <code>Details</code> table by barcode and uses that description instead (truncating to 40 chars only as a last resort).</span>
           </div>
         </li>
         <li>
@@ -797,7 +848,7 @@
 
       <div class="faq-item">
         <div class="q">Will the mapping survive a software update?</div>
-        <div class="a">The file is bundled inside the <kbd>.exe</kbd>. Any software rebuild will overwrite the bundled copy. Keep your local changes in the source project's <kbd>specials/brand_import_mappings.json</kbd> so they are included in the next build.</div>
+        <div class="a">Yes &mdash; as of April 2026, <kbd>brand_import_mappings.json</kbd> is no longer bundled inside the <kbd>.exe</kbd>. It sits next to the exe in the application folder and is not touched by a software update. Edit it freely; your changes will persist across upgrades.</div>
       </div>
 
       <div class="faq-item">
@@ -809,7 +860,7 @@
   </article>
 </div>
 
-<footer>Price File Builder &mdash; Specials Brand Mapping Guide &mdash; Last updated April 2026</footer>
+<footer>Price File Builder &mdash; Specials Brand Mapping Guide &mdash; Last updated April 2026 &mdash; brand_import_mappings.json is now editable without rebuild</footer>
 
 </body>
 </html>

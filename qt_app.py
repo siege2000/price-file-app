@@ -39,8 +39,8 @@ import config
 from specials.specials_widget import SpecialsWidget
 
 import os as _os
-SUPPLIER_SETTINGS_FILE = _os.path.join(config.base_path(), "data", "supplier_settings.json")
-SUPPLIER_RULES_FILE    = _os.path.join(config.base_path(), "data", "supplier_rules.json")
+SUPPLIER_SETTINGS_FILE = _os.path.join(config.base_path(), "supplier_settings.json")
+SUPPLIER_RULES_FILE    = _os.path.join(config.base_path(), "supplier_rules.json")
 
 
 # ── Pandas ↔ Qt model ────────────────────────────────────────────────────────
@@ -861,7 +861,7 @@ class PriceFileWidget(QWidget):
     # ─── Template + supplier loading ──────────────────────────────────────────
     def _load_templates(self):
         try:
-            self._templates = load_templates(_os.path.join(config.base_path(), "data", "templates.json"))
+            self._templates = load_templates(_os.path.join(config.base_path(), "templates.json"))
             self._cmb_template.blockSignals(True)
             self._cmb_template.clear()
             self._cmb_template.addItems(list(self._templates.keys()))

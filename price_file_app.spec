@@ -7,7 +7,7 @@
 #
 # Version format: YYYY.MM.N  (year, month, release number for that month)
 
-APP_VERSION = '2026.04.01'
+APP_VERSION = '2026.04.02'
 
 block_cipher = None
 

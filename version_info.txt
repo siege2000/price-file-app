@@ -6,8 +6,8 @@
 
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(2026, 4, 1, 0),
-    prodvers=(2026, 4, 1, 0),
+    filevers=(2026, 4, 2, 0),
+    prodvers=(2026, 4, 2, 0),
     mask=0x3f,
     flags=0x0,
     OS=0x40004,
@@ -23,12 +23,12 @@ VSVersionInfo(
           [
             StringStruct(u'CompanyName',      u'Healthsoft'),
             StringStruct(u'FileDescription',  u'Price File Builder'),
-            StringStruct(u'FileVersion',      u'2026.04.01'),
+            StringStruct(u'FileVersion',      u'2026.04.02'),
             StringStruct(u'InternalName',     u'PriceFileApp'),
             StringStruct(u'LegalCopyright',   u'© 2026 Healthsoft'),
             StringStruct(u'OriginalFilename', u'PriceFileApp.exe'),
             StringStruct(u'ProductName',      u'Price File Builder'),
-            StringStruct(u'ProductVersion',   u'2026.04.01'),
+            StringStruct(u'ProductVersion',   u'2026.04.02'),
           ]
         )
       ]

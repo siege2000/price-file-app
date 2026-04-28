@@ -72,12 +72,12 @@ def get_special_id(
 
 # ── Save specials grid → SpecialItems ─────────────────────────────────────────
 
-def _parse_special_price(price_raw: str) -> tuple[int, float]:
+def _parse_special_price(price_raw: str) -> tuple[int | None, float]:
     """
     Convert the Special Price cell value.
     Returns (special_retail_cents, special_percent).
       "15%"   → (0, 15.0)
-      ""      → (-1, 0.0)   # message-only / no price
+      ""      → (None, 0.0)  # no price — store NULL in DB
       "12.99" → (1299, 0.0)
     """
     price_raw = price_raw.strip()
@@ -88,11 +88,11 @@ def _parse_special_price(price_raw: str) -> tuple[int, float]:
             pct = 0.0
         return 0, pct
     if price_raw == "":
-        return -1, 0.0
+        return None, 0.0
     try:
         return round(float(price_raw) * 100), 0.0
     except ValueError:
-        return -1, 0.0
+        return None, 0.0
 
 
 def _parse_multibuy(multibuy_raw: str, is_combo: bool) -> str:

@@ -77,7 +77,7 @@ def _parse_special_price(price_raw: str) -> tuple[int | None, float]:
     Convert the Special Price cell value.
     Returns (special_retail_cents, special_percent).
       "15%"   → (0, 15.0)
-      ""      → (None, 0.0)  # no price — store NULL in DB
+      ""      → (-1, 0.0)   # no price — store -1 sentinel in DB
       "12.99" → (1299, 0.0)
     """
     price_raw = price_raw.strip()
@@ -88,7 +88,7 @@ def _parse_special_price(price_raw: str) -> tuple[int | None, float]:
             pct = 0.0
         return 0, pct
     if price_raw == "":
-        return None, 0.0
+        return -1, 0.0
     try:
         return round(float(price_raw) * 100), 0.0
     except ValueError:
@@ -178,7 +178,7 @@ def save_specials(
             group_id       = str(r.get("Group ID", "") or "").strip()
             pos_note       = str(r.get("POS Note", "") or "").strip()
             gift_barcode   = str(r.get("Gift Barcode", "") or "").strip()
-            gift_pharmacode = str(r.get("Gift Pharmacode", "") or "").strip() or "False"
+            gift_pharmacode = str(r.get("Gift Pharmacode", "") or "").strip()
             msg_is_q       = _is_yes(r.get("Msg Is Question", ""))
             deal_name      = str(r.get("Deal Name", "") or "").strip()
             secondary_gid  = str(r.get("Secondary Group ID", "") or "").strip()

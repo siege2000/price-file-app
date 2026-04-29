@@ -9,7 +9,24 @@
       "Bash(python -m py_compile access_helpers.py)",
       "Bash(python -c \"from specials_widget import SpecialsWidget; print\\(''OK''\\)\")",
       "Bash(python -c \":*)",
-      "Bash(venv/Scripts/python -c \":*)"
+      "Bash(venv/Scripts/python -c \":*)",
+      "Bash(mv access_helpers.py sqlite_helper.py sqlite_browser.py db/)",
+      "Bash(mv file_helpers.py column_helpers.py description_helpers.py editing_helpers.py processing/)",
+      "Bash(mv specials_widget.py specials_helpers.py brand_import_mappings.json specials/)",
+      "Bash(mv templates.json supplier_settings.json supplier_rules.json replacements.csv data/)",
+      "Bash(mv notes.md SQLite_requirements.md docs/)",
+      "Bash(venv/Scripts/pyinstaller price_file_app.spec)",
+      "Bash(venv/Scripts/pyinstaller --noconfirm price_file_app.spec)",
+      "Bash(cmd /c \"rmdir /S /Q \"\"c:\\\\Users\\\\Colin\\\\OneDrive - Healthsoft Ltd\\\\Documents\\\\github\\\\price-file-app\\\\dist\\\\PriceFileApp\"\"\")",
+      "Bash(powershell -Command \"Remove-Item -Path ''c:\\\\Users\\\\Colin\\\\OneDrive - Healthsoft Ltd\\\\Documents\\\\github\\\\price-file-app\\\\dist\\\\PriceFileApp'' -Recurse -Force -ErrorAction SilentlyContinue; Write-Host ''done''\")",
+      "Bash(powershell -Command \"Remove-Item -Path ''c:\\\\Users\\\\Colin\\\\OneDrive - Healthsoft Ltd\\\\Documents\\\\github\\\\price-file-app\\\\build'' -Recurse -Force; Remove-Item -Path ''c:\\\\Users\\\\Colin\\\\OneDrive - Healthsoft Ltd\\\\Documents\\\\github\\\\price-file-app\\\\dist'' -Recurse -Force; Write-Host ''cleaned''\")",
+      "Bash(powershell -Command \"Remove-Item -Path ''c:\\\\Users\\\\Colin\\\\OneDrive - Healthsoft Ltd\\\\Documents\\\\github\\\\price-file-app\\\\build'',''c:\\\\Users\\\\Colin\\\\OneDrive - Healthsoft Ltd\\\\Documents\\\\github\\\\price-file-app\\\\dist'' -Recurse -Force -ErrorAction SilentlyContinue; Write-Host ''cleaned''\")",
+      "Bash(git pull:*)",
+      "Bash(venv/Scripts/activate)",
+      "Bash(pyinstaller -y price_file_app.spec)",
+      "Bash(taskkill /F /IM PriceFileApp.exe)",
+      "Bash(python -)",
+      "Bash(python -c ':*)"
     ]
   }
 }

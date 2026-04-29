@@ -7,7 +7,7 @@
 #
 # Version format: YYYY.MM.N  (year, month, release number for that month)
 
-APP_VERSION = '2026.04.02'
+APP_VERSION = '2026.04.03'
 
 block_cipher = None
 
@@ -16,10 +16,10 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[
-        # Note: settings.ini, help.html, data/, and brand_import_mappings.json
-        # are NOT bundled here because the app resolves them relative to the exe
-        # directory (os.path.dirname(sys.executable)).  Copy those manually after
-        # the build — see the README Distribution section.
+        # Note: settings.ini, help.html, data/, brand_import_mappings.json, and
+        # templates.json are NOT bundled here because the app resolves them relative
+        # to the exe directory (os.path.dirname(sys.executable)).  Copy those
+        # manually after the build — see the README Distribution section.
     ],
     hiddenimports=[
         'pyodbc',

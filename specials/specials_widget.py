@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from datetime import date, datetime
 
 import pandas as pd
@@ -874,6 +875,7 @@ class SpecialsWidget(QWidget):
                 barcode = barcode.replace('"', '').replace(' ', '')
 
             desc = clean(str(desc_s.iloc[i]))
+            deal_name_val = clean(str(deal_name_s.iloc[i]))
 
             # ── SpecialRetail / SpecialPercent ────────────────────────────────
             # Rule: if Product price has a value → SpecialRetail (dollar string)
@@ -894,6 +896,10 @@ class SpecialsWidget(QWidget):
                     sp = disc_val + "%"
             else:
                 sp = ""
+                # X-for-$y deals embed the bundle price in the deal name (e.g. "2 for $79.99")
+                m = re.search(r"for\s+\$(\d+(?:\.\d+)?)", deal_name_val, re.IGNORECASE)
+                if m:
+                    sp = f"{float(m.group(1)):.2f}"
 
             # ── MultiBuy: Min qty; fallback to Quantity breaks for X-for-$y ──
             mb_raw = _v(min_qty_s, i) or _v(qty_breaks_s, i)
@@ -925,7 +931,6 @@ class SpecialsWidget(QWidget):
             flybuys = "Y" if bm_rules.get("flybuys", False) else "N"
 
             # ── DealName and GroupID ──────────────────────────────────────────
-            deal_name_val = clean(str(deal_name_s.iloc[i]))
             gid_rule = bm_rules.get("group_id", "sequential_by_deal_name")
             if gid_rule == "sequential_by_deal_name":
                 group_id = str(deal_group_map.get(deal_name_val, "")) if deal_group_map else ""

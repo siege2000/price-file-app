@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Price File App — User Guide</title>
+  <style>
+    /* ── Reset & base ─────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 15px;
+      line-height: 1.65;
+      color: #212529;
+      background: #f8f9fa;
+    }
+
+    /* ── Layout ───────────────────────────────────────────── */
+    .page-wrapper { display: flex; min-height: 100vh; }
+
+    /* Sidebar */
+    nav {
+      width: 240px;
+      min-width: 240px;
+      background: #1a2540;
+      color: #c8d0e0;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 24px 0 40px;
+    }
+    nav .logo {
+      padding: 0 20px 20px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      border-bottom: 1px solid #2e3d5f;
+      margin-bottom: 16px;
+      letter-spacing: 0.3px;
+    }
+    nav .logo span { color: #60a5fa; }
+    nav ul { list-style: none; }
+    nav ul li a {
+      display: block;
+      padding: 7px 20px;
+      color: #a0aec0;
+      text-decoration: none;
+      font-size: 13px;
+      border-left: 3px solid transparent;
+      transition: background 0.15s, color 0.15s;
+    }
+    nav ul li a:hover,
+    nav ul li a.active {
+      background: #243050;
+      color: #fff;
+      border-left-color: #60a5fa;
+    }
+    nav .nav-section {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: #4a5568;
+      padding: 18px 20px 6px;
+    }
+
+    /* Main content */
+    main {
+      flex: 1;
+      padding: 40px 48px 80px;
+      max-width: 900px;
+    }
+
+    /* ── Typography ───────────────────────────────────────── */
+    h1 {
+      font-size: 28px;
+      font-weight: 800;
+      color: #1a2540;
+      margin-bottom: 6px;
+    }
+    .subtitle {
+      color: #6c757d;
+      font-size: 15px;
+      margin-bottom: 36px;
+    }
+    h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1a2540;
+      margin-top: 52px;
+      margin-bottom: 14px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #2d3748;
+      margin-top: 28px;
+      margin-bottom: 10px;
+    }
+    p { margin-bottom: 12px; }
+
+    /* ── Steps ────────────────────────────────────────────── */
+    .steps { counter-reset: step; margin: 20px 0; }
+    .step {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 20px;
+      align-items: flex-start;
+    }
+    .step-num {
+      counter-increment: step;
+      content: counter(step);
+      min-width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #1a2540;
+      color: #fff;
+      font-weight: 700;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 3px; font-size: 15px; }
+
+    /* ── Tip / warning boxes ──────────────────────────────── */
+    .tip, .warn, .info {
+      border-radius: 6px;
+      padding: 12px 16px;
+      margin: 16px 0;
+      font-size: 14px;
+      display: flex;
+      gap: 10px;
+    }
+    .tip   { background: #d1fae5; border-left: 4px solid #10b981; color: #064e3b; }
+    .warn  { background: #fef3c7; border-left: 4px solid #f59e0b; color: #78350f; }
+    .info  { background: #dbeafe; border-left: 4px solid #3b82f6; color: #1e3a5f; }
+    .tip .icon, .warn .icon, .info .icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+
+    /* ── Colour legend ────────────────────────────────────── */
+    .legend { display: flex; flex-wrap: wrap; gap: 12px; margin: 14px 0; }
+    .swatch {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+    }
+    .swatch-box {
+      width: 20px;
+      height: 20px;
+      border-radius: 3px;
+      border: 1px solid rgba(0,0,0,.15);
+      flex-shrink: 0;
+    }
+
+    /* ── Field reference table ────────────────────────────── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin: 14px 0 24px;
+    }
+    th {
+      background: #1a2540;
+      color: #fff;
+      padding: 8px 12px;
+      text-align: left;
+      font-weight: 600;
+    }
+    td { padding: 8px 12px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+    tr:nth-child(even) td { background: #f1f5f9; }
+
+    /* ── Keyboard key badge ───────────────────────────────── */
+    kbd {
+      display: inline-block;
+      background: #e2e8f0;
+      border: 1px solid #b0bec5;
+      border-radius: 4px;
+      padding: 1px 7px;
+      font-size: 12px;
+      font-family: monospace;
+      color: #37474f;
+      box-shadow: 0 1px 0 #b0bec5;
+    }
+
+    /* ── Module badge ─────────────────────────────────────── */
+    .badge {
+      display: inline-block;
+      border-radius: 20px;
+      padding: 2px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      vertical-align: middle;
+      margin-left: 6px;
+    }
+    .badge-blue  { background: #dbeafe; color: #1e40af; }
+    .badge-green { background: #d1fae5; color: #065f46; }
+
+    /* ── Section divider ──────────────────────────────────── */
+    .module-header {
+      background: linear-gradient(135deg, #1a2540 0%, #2a3f6f 100%);
+      color: #fff;
+      border-radius: 10px;
+      padding: 24px 28px;
+      margin-top: 52px;
+      margin-bottom: 28px;
+    }
+    .module-header h2 {
+      color: #fff;
+      border: none;
+      margin: 0 0 6px;
+      padding: 0;
+      font-size: 22px;
+    }
+    .module-header p { color: #a0c4ff; margin: 0; font-size: 14px; }
+
+    /* ── TOC on mobile ────────────────────────────────────── */
+    @media (max-width: 768px) {
+      nav { display: none; }
+      main { padding: 24px 18px 60px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-wrapper">
+
+  <!-- ── Sidebar navigation ── -->
+  <nav>
+    <div class="logo">RxOne<br/><span>Price File App</span></div>
+    <ul>
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#starting">Starting the App</a></li>
+
+      <div class="nav-section">Price File</div>
+      <li><a href="#pf-workflow">Typical Workflow</a></li>
+      <li><a href="#pf-supplier">1. Select Supplier</a></li>
+      <li><a href="#pf-open">2. Open a File</a></li>
+      <li><a href="#pf-mapping">3. Map Columns</a></li>
+      <li><a href="#pf-tradename">4. TradeName Settings</a></li>
+      <li><a href="#pf-build">5. Build Output</a></li>
+      <li><a href="#pf-preview">6. Preview Changes</a></li>
+      <li><a href="#pf-fix">7. Fix Descriptions</a></li>
+      <li><a href="#pf-save">8. Save Settings</a></li>
+      <li><a href="#pf-write">9. Write to Database</a></li>
+      <li><a href="#pf-rules">Shortening Rules</a></li>
+
+      <div class="nav-section">Specials</div>
+      <li><a href="#sp-workflow">Typical Workflow</a></li>
+      <li><a href="#sp-brand">1. Select Brand</a></li>
+      <li><a href="#sp-import">2. Import File</a></li>
+      <li><a href="#sp-columns">3. Column Mapping</a></li>
+      <li><a href="#sp-review">4. Review the Grid</a></li>
+      <li><a href="#sp-edit">5. Editing & Cleaning</a></li>
+      <li><a href="#sp-name">6. Special Name & Dates</a></li>
+      <li><a href="#sp-save">7. Save to Database</a></li>
+      <li><a href="#sp-grid">Grid Toolbar</a></li>
+      <li><a href="#sp-fields">Grid Field Reference</a></li>
+
+      <div class="nav-section">Tips</div>
+      <li><a href="#tips">Common Questions</a></li>
+    </ul>
+  </nav>
+
+  <!-- ── Main content ── -->
+  <main>
+
+    <h1>Price File App</h1>
+    <p class="subtitle">User Guide &mdash; for pharmacy staff</p>
+
+    <!-- Overview -->
+    <section id="overview">
+      <h2>Overview</h2>
+      <p>The <strong>Price File App</strong> is a desktop tool for importing price files received from suppliers and loading them into the RxOne database. It has two main areas:</p>
+      <ul style="margin: 10px 0 12px 20px; line-height: 2;">
+        <li><strong>Price File</strong> — import regular price files (cost, retail, barcodes) from suppliers.</li>
+        <li><strong>Specials File</strong> — import promotional or catalogue specials sent by brands.</li>
+      </ul>
+      <p>Both modules read from CSV or Excel files, let you review and clean the data, and then write it directly into the database.</p>
+    </section>
+
+    <!-- Starting the app -->
+    <section id="starting">
+      <h2>Starting the App</h2>
+      <p>Double-click <strong>PriceFileApp.exe</strong> in the application folder. The window will open and connect to the database automatically. You will see two tabs at the top — <strong>Price File</strong> and <strong>Specials File</strong>.</p>
+      <div class="tip">
+        <span class="icon">💡</span>
+        <span>The first launch may take 3–5 seconds while the app loads. This is normal.</span>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════ PRICE FILE MODULE ═══════════════════════════════ -->
+    <div class="module-header" id="price-file">
+      <h2>Price File Module</h2>
+      <p>Import regular supplier price files — costs, retail prices, barcodes, descriptions — into the RxOne database.</p>
+    </div>
+
+    <section id="pf-workflow">
+      <h2>Typical Workflow</h2>
+      <p>Each time you receive a new price file from a supplier, follow these steps in order:</p>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Select Supplier</strong>Choose the supplier from the dropdown. The app quietly fetches their current data in the background.</div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Open File</strong>Browse to the CSV or Excel file the supplier sent.</div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Choose a Template &amp; Map Columns</strong>Select the appropriate template (or leave on General) and check column mappings.</div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Set TradeName Options</strong>Configure how the product description will be built from the file's columns.</div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Build Output</strong>Click <em>Build Output</em> to process the file and create the cleaned data set.</div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Preview Changes</strong>Click <em>Preview Changes</em> to compare the new data against what is already in the database.</div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Fix Descriptions</strong>Edit any descriptions that are too long (over 40 characters).</div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Save Settings</strong>Click <em>Save Settings</em> so your column choices are remembered for next time.</div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Write to Database</strong>Click <em>Execute Upsert</em> (or <em>Replace All</em>) to update the database.</div></div>
+      </div>
+    </section>
+
+    <section id="pf-supplier">
+      <h2>Step 1 — Select a Supplier</h2>
+      <p>In the <strong>Supplier</strong> panel on the right side of the screen, choose the supplier from the dropdown list.</p>
+      <p>As soon as you select a supplier, the app starts fetching their existing database records in the background. By the time you have loaded a file and built the output, the data will be ready and <em>Preview Changes</em> will respond almost instantly.</p>
+      <div class="info">
+        <span class="icon">ℹ️</span>
+        <span>If a supplier has <strong>more than one sheet layout</strong> saved (for example when they send different product categories on separate sheets), a <em>Sheet layout</em> dropdown will appear. Select the appropriate layout before opening the file.</span>
+      </div>
+    </section>
+
+    <section id="pf-open">
+      <h2>Step 2 — Open a File</h2>
+      <p>Click the <strong>Open File</strong> button and browse to the price file the supplier sent. The app accepts <strong>.csv</strong> and <strong>.xlsx / .xls</strong> files.</p>
+      <p>If the Excel workbook has more than one sheet, a popup will appear asking you to choose which sheet to load. Select the correct sheet and click <strong>Load Sheet</strong>.</p>
+      <p>Once loaded, a preview of the raw file data will appear in the <strong>Source Data Preview</strong> table so you can check it looks right before mapping.</p>
+    </section>
+
+    <section id="pf-mapping">
+      <h2>Step 3 — Map Columns</h2>
+      <p>The <strong>Column Mapping</strong> section tells the app which column in the supplier's file corresponds to each field in the database. Use the dropdowns to set:</p>
+      <table>
+        <tr><th>Field</th><th>What it is</th></tr>
+        <tr><td>PLU</td><td>Product Look-Up number (RxOne's product code)</td></tr>
+        <tr><td>Pharmacode</td><td>Industry pharmacode</td></tr>
+        <tr><td>Barcode / EAN</td><td>Barcode on the product</td></tr>
+        <tr><td>Supplier Code</td><td>The supplier's own product code</td></tr>
+        <tr><td>Retail</td><td>Recommended retail price</td></tr>
+        <tr><td>Cost</td><td>Your cost / buy price</td></tr>
+        <tr><td>Outer</td><td>Outer / case quantity</td></tr>
+      </table>
+      <p><strong>Templates</strong> make this easier. Known suppliers have pre-defined templates that fill the column mappings automatically. The <em>General</em> template attempts to guess the columns from their names.</p>
+      <div class="tip">
+        <span class="icon">💡</span>
+        <span>If you use the same supplier regularly, save your column settings after the first import and they will be remembered every time.</span>
+      </div>
+    </section>
+
+    <section id="pf-tradename">
+      <h2>Step 4 — TradeName / Description Settings</h2>
+      <p>The <strong>TradeName</strong> is the product description that will be saved to the database. This section controls how it is built from the columns in the supplier's file.</p>
+      <table>
+        <tr><th>Setting</th><th>What it does</th></tr>
+        <tr><td>Description columns</td><td>Select one or more columns whose values will be combined to form the description.</td></tr>
+        <tr><td>Separator</td><td>Text placed between each column when combining (e.g. a space or a dash).</td></tr>
+        <tr><td>Prefix</td><td>Optional text added to the start of every description (e.g. a house-brand label).</td></tr>
+        <tr><td>Title Case</td><td>Converts the description to Title Case (first letter of each word capitalised).</td></tr>
+        <tr><td>Normalise units</td><td>Tidies up measurements — for example converts "75 g" to "75g".</td></tr>
+      </table>
+      <div class="warn">
+        <span class="icon">⚠️</span>
+        <span>Descriptions must be <strong>40 characters or fewer</strong>. Rows that are too long are highlighted in red and must be shortened before you can write to the database.</span>
+      </div>
+    </section>
+
+    <section id="pf-build">
+      <h2>Step 5 — Build Output</h2>
+      <p>Click <strong>Build Output</strong>. The app processes the file, applies your TradeName settings, removes rows with no identifying key (no barcode, pharmacode, or supplier code), and de-duplicates by PLU (keeping the last occurrence).</p>
+      <p>A row count will appear in the status bar. You can now see the cleaned result in the output table, including a <strong>CharCount</strong> column showing the length of each description.</p>
+    </section>
+
+    <section id="pf-preview">
+      <h2>Step 6 — Preview Changes</h2>
+      <p>Click <strong>Preview Changes</strong> to compare your output against the existing database records for this supplier. Each row is colour-coded:</p>
+      <div class="legend">
+        <div class="swatch"><div class="swatch-box" style="background:#d4edda;"></div> <span><strong>Green — NEW:</strong> product does not yet exist in the database</span></div>
+        <div class="swatch"><div class="swatch-box" style="background:#fff3cd;"></div> <span><strong>Yellow — UPDATE:</strong> product exists and something has changed</span></div>
+        <div class="swatch"><div class="swatch-box" style="background:#f8f9fa;"></div> <span><strong>Grey — UNCHANGED:</strong> no differences found</span></div>
+      </div>
+      <p>The preview columns show the <em>old</em> and <em>new</em> values for description, cost, and retail so you can see exactly what will change.</p>
+      <h3>Removing rows from the preview</h3>
+      <p>If you do not want to update certain rows, click to select them and press <kbd>Delete</kbd>. They will be removed from the preview and will not be written to the database.</p>
+    </section>
+
+    <section id="pf-fix">
+      <h2>Step 7 — Fix Long Descriptions</h2>
+      <p>Any description over 40 characters is flagged with ⚠ and highlighted in red in the <strong>Chars</strong> column. You have two options:</p>
+      <ul style="margin: 10px 0 12px 20px; line-height: 2;">
+        <li><strong>Edit manually:</strong> Double-click the <em>New_Description</em> cell and type the corrected text. The character count updates as you type.</li>
+        <li><strong>Bulk Truncate:</strong> Click the <em>Bulk Truncate</em> button to automatically cut all over-length descriptions to 40 characters.</li>
+      </ul>
+      <div class="tip">
+        <span class="icon">💡</span>
+        <span>Use <strong>Shortening Rules</strong> (see below) to set up automatic find-and-replace substitutions that run every time you build output for that supplier — much faster than fixing manually each time.</span>
+      </div>
+    </section>
+
+    <section id="pf-save">
+      <h2>Step 8 — Save Settings</h2>
+      <p>Click <strong>Save Settings</strong> to store the current column mappings, TradeName configuration, skip-rows setting, and template for this supplier. Next time you select this supplier and open a file, everything will be pre-filled for you.</p>
+      <p>If you work with different sheet layouts for the same supplier (e.g. different product categories on separate sheets), you can save up to six separate layouts per supplier using the <em>Sheet layout</em> dropdown.</p>
+    </section>
+
+    <section id="pf-write">
+      <h2>Step 9 — Write to Database</h2>
+      <p>You have two options for writing data:</p>
+      <table>
+        <tr><th>Button</th><th>What it does</th><th>When to use it</th></tr>
+        <tr>
+          <td><strong>Execute Upsert</strong></td>
+          <td>Updates existing records and inserts new ones. Existing records not in the file are left untouched.</td>
+          <td>Regular price file updates — the safest option.</td>
+        </tr>
+        <tr>
+          <td><strong>Replace All</strong></td>
+          <td>Deletes <em>all</em> existing records for this supplier, then inserts everything fresh from the file.</td>
+          <td>When the supplier has sent a complete replacement catalogue.</td>
+        </tr>
+        <tr>
+          <td><strong>Download CSV</strong></td>
+          <td>Saves the built output as a CSV file — no database write.</td>
+          <td>When you just need an export file, not a database update.</td>
+        </tr>
+      </table>
+      <div class="warn">
+        <span class="icon">⚠️</span>
+        <span><strong>Replace All</strong> is irreversible. All existing records for the supplier will be deleted before the new data is inserted. Make sure you have reviewed the preview carefully before using this option.</span>
+      </div>
+      <p>A progress bar appears while the write is in progress. The status bar will confirm how many rows were inserted and updated when it finishes.</p>
+    </section>
+
+    <section id="pf-rules">
+      <h2>Shortening Rules</h2>
+      <p>Shortening rules let you define automatic find-and-replace substitutions that run every time you build the output for a particular supplier. For example, you could replace "Capsules" with "Caps" to save characters.</p>
+      <h3>Opening the rules editor</h3>
+      <p>In the Supplier panel, click <strong>Edit Shortening Rules</strong>. A table appears with two columns: <em>From</em> (what to find) and <em>To</em> (what to replace it with).</p>
+      <h3>How rules work</h3>
+      <ul style="margin: 10px 0 12px 20px; line-height: 2;">
+        <li>Matching is <strong>whole-word</strong> and <strong>case-insensitive</strong> — so "Tablet" will match "Tablet" and "TABLET" but not "Tablets" unless you specify it.</li>
+        <li>To match part of a word or use advanced patterns, start the <em>From</em> value with <code>regex:</code>.</li>
+        <li>Leave the <em>To</em> column empty to simply delete the matched text.</li>
+      </ul>
+      <p>Click <strong>Save &amp; Apply to Preview</strong> when done. Rules are saved and will be applied automatically on the next Build Output.</p>
+    </section>
+
+    <!-- ═══════════════════════════════ SPECIALS MODULE ═══════════════════════════════ -->
+    <div class="module-header" id="specials">
+      <h2>Specials File Module</h2>
+      <p>Import promotional specials and catalogue deals sent by brands, and save them to the RxOne Specials database.</p>
+    </div>
+
+    <section id="sp-workflow">
+      <h2>Typical Workflow</h2>
+      <div class="steps">
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Select Brand</strong>Choose the brand from the dropdown on the right panel.</div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Import File</strong>Click <em>Import…</em> and browse to the specials file (CSV or Excel).</div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Set Column Mapping</strong>Tell the app which columns in the file contain the barcode, description, and special price.</div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Review the Grid</strong>Check the imported rows — new, changed, and invalid items are highlighted in different colours.</div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Edit &amp; Clean</strong>Fix descriptions, barcodes, or prices directly in the grid. Use Bulk Find &amp; Replace or Sort Invalid at Top to help manage problem rows.</div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Enter Special Name &amp; Dates</strong>Fill in the special name (e.g. <em>April 2026 Catalogue</em>), start date, and finish date.</div></div>
+        <div class="step"><div class="step-num"></div><div class="step-body"><strong>Save to Database</strong>Click <em>Save to Database</em> to write the specials.</div></div>
+      </div>
+    </section>
+
+    <section id="sp-brand">
+      <h2>Step 1 — Select a Brand</h2>
+      <p>Click the <strong>Brand</strong> dropdown on the right panel and select the brand whose specials you are importing. The app loads the saved column-mapping settings for that brand automatically.</p>
+      <div class="info">
+        <span class="icon">ℹ️</span>
+        <span>When the app loads, it automatically removes any specials from the database whose finish date was more than two months ago, keeping the database tidy.</span>
+      </div>
+    </section>
+
+    <section id="sp-import">
+      <h2>Step 2 — Import a File</h2>
+      <p>Click the blue <strong>Import…</strong> button at the bottom of the screen and browse to the specials file provided by the brand. The app accepts <strong>.csv</strong> and <strong>.xlsx / .xls</strong> files.</p>
+      <p>For known brands, the app will attempt to auto-detect the column mapping from the file's header row and fill in the grid automatically. For other brands, you may need to set the column mapping manually (see Step 3).</p>
+    </section>
+
+    <section id="sp-columns">
+      <h2>Step 3 — Column Mapping</h2>
+      <p>In the <strong>Columns</strong> panel on the right, set which column number in the file maps to each field. Column numbers start at 1 (the leftmost column in the file).</p>
+      <table>
+        <tr><th>Field</th><th>What it is</th></tr>
+        <tr><td>Description</td><td>Product name / description</td></tr>
+        <tr><td>Special Price</td><td>The special price. Can be a dollar amount (e.g. <code>12.99</code>) or a percentage discount (e.g. <code>15%</code>).</td></tr>
+        <tr><td>Barcode / Pharmacode</td><td>The product barcode or pharmacode used to match to stock</td></tr>
+        <tr><td>POS Note (optional)</td><td>A message to display at the point of sale</td></tr>
+      </table>
+      <p>You can also set the <strong>field delimiter</strong> (Comma, Tab, Semicolon, or Pipe) and whether to <strong>ignore the first line</strong> of the file (tick this if the first row is a header row).</p>
+      <p>Once set correctly, click <strong>Save Column Settings</strong> to remember these choices for this brand in future.</p>
+    </section>
+
+    <section id="sp-review">
+      <h2>Step 4 — Review the Grid</h2>
+      <p>After importing, the grid shows all the rows from the file. Each row is colour-coded to show its status:</p>
+      <div class="legend">
+        <div class="swatch"><div class="swatch-box" style="background:#ccccff;"></div> <span><strong>Blue/Purple — New:</strong> this item does not exist in the current specials database</span></div>
+        <div class="swatch"><div class="swatch-box" style="background:#ffc0c0;"></div> <span><strong>Pink/Red — Changed:</strong> this item exists but something has changed</span></div>
+        <div class="swatch"><div class="swatch-box" style="background:#ffcccc;"></div> <span><strong>Light Red — Invalid:</strong> this row has a problem and will be skipped on save</span></div>
+        <div class="swatch"><div class="swatch-box" style="background:#ffffff; border:1px solid #e2e8f0;"></div> <span><strong>White — Unchanged:</strong> no changes from the current database</span></div>
+      </div>
+      <p>The <strong>Chars</strong> column shows the description length. Descriptions must be 40 characters or fewer.</p>
+      <div class="tip">
+        <span class="icon">💡</span>
+        <span>Click <strong>Sort Invalid at Top</strong> in the toolbar to bring all problem rows to the top of the grid, making them easy to find and fix.</span>
+      </div>
+    </section>
+
+    <section id="sp-edit">
+      <h2>Step 5 — Editing &amp; Cleaning the Grid</h2>
+      <h3>Editing cells directly</h3>
+      <p>You can double-click any editable cell in the grid to change its value. The editable columns are: <em>Description</em>, <em>MultiBuy Qty</em>, <em>Special Price</em>, <em>POS Note</em>, and <em>Multi Retail</em>.</p>
+
+      <h3>Adding and removing rows</h3>
+      <p>Use the buttons in the <strong>Row Actions</strong> panel on the right:</p>
+      <table>
+        <tr><th>Button</th><th>What it does</th></tr>
+        <tr><td>Add Blank Line</td><td>Adds an empty row at the bottom of the grid for manual entry.</td></tr>
+        <tr><td>Delete Selected Line</td><td>Removes the selected row(s) from the grid (they will not be saved).</td></tr>
+        <tr><td>Clear POS Note</td><td>Clears the POS Note field for all selected rows.</td></tr>
+        <tr><td>Bulk Find &amp; Replace</td><td>Find and replace text across all Description cells at once.</td></tr>
+      </table>
+
+      <h3>Looking up a barcode</h3>
+      <p>If a row is missing a barcode, select that row in the grid and click <strong>Open Stockcards (get barcode/pharmacode)…</strong>. A search dialog will open where you can search by product name. When you select a result, the barcode is automatically filled in for that row.</p>
+
+      <h3>Logging invalid items</h3>
+      <p>Click the red <strong>Log Invalid Items…</strong> button in the toolbar to export a list of all invalid rows to a file. This is useful if you need to send a report back to the supplier about items that could not be matched.</p>
+    </section>
+
+    <section id="sp-name">
+      <h2>Step 6 — Special Name &amp; Dates</h2>
+      <p>At the bottom of the screen, fill in:</p>
+      <table>
+        <tr><th>Field</th><th>Notes</th></tr>
+        <tr><td><strong>Special Name</strong></td><td>A descriptive name for this promotion, e.g. <em>April 2026 Catalogue</em>. If a special with the same name already exists for this brand, the existing record will be updated.</td></tr>
+        <tr><td><strong>Start Date</strong></td><td>The date the promotion begins. Click the calendar icon to pick a date.</td></tr>
+        <tr><td><strong>Finish Date</strong></td><td>The date the promotion ends. Defaults to one month from today.</td></tr>
+        <tr><td><strong>Password</strong> (optional)</td><td>If the brand requires a password to access the special at the POS, enter it here.</td></tr>
+      </table>
+    </section>
+
+    <section id="sp-save">
+      <h2>Step 7 — Save to Database</h2>
+      <p>Click the green <strong>Save to Database</strong> button. The app will:</p>
+      <ul style="margin: 10px 0 12px 20px; line-height: 2;">
+        <li>Create the special record (or update it if one with the same name already exists).</li>
+        <li>Delete any existing items for this special and replace them with the current grid contents.</li>
+        <li>Skip any rows marked as Invalid.</li>
+      </ul>
+      <p>A progress indicator shows how many rows have been saved. A message will confirm the total when complete.</p>
+      <div class="warn">
+        <span class="icon">⚠️</span>
+        <span>Saving will <strong>replace all existing items</strong> for the named special. If you need to add to an existing special without removing old items, contact your system administrator.</span>
+      </div>
+
+      <h3>Saving and loading the grid</h3>
+      <p>Before saving to the database, you can save the current grid as a file for later using <strong>Save Grid…</strong> in the toolbar. You can reload it with <strong>Load Grid…</strong>. This is useful if you need to pause your work and come back later.</p>
+    </section>
+
+    <section id="sp-grid">
+      <h2>Grid Toolbar Reference</h2>
+      <table>
+        <tr><th>Button</th><th>What it does</th></tr>
+        <tr><td>Load Grid…</td><td>Load a previously saved grid file back into the app.</td></tr>
+        <tr><td>Save Grid…</td><td>Save the current grid to a file (does not write to the database).</td></tr>
+        <tr><td>Bulk Find &amp; Replace</td><td>Find and replace text across all editable description cells.</td></tr>
+        <tr><td>Sort Invalid at Top</td><td>Re-sorts the grid to bring all Invalid rows to the top for easy review.</td></tr>
+        <tr><td>Log Invalid Items…</td><td>Exports all invalid rows to a report file.</td></tr>
+      </table>
+    </section>
+
+    <section id="sp-fields">
+      <h2>Grid Field Reference</h2>
+      <p>The import grid has the following columns. Most are filled automatically from the file — you only need to edit them if something looks wrong.</p>
+      <table>
+        <tr><th>Column</th><th>Description</th><th>Editable?</th></tr>
+        <tr><td>Barcode</td><td>Product barcode used to match to the POS system</td><td>No (use Stockcard lookup)</td></tr>
+        <tr><td>Description</td><td>Product name — max 40 characters</td><td>Yes</td></tr>
+        <tr><td>Chars</td><td>Character count for the description</td><td>No (auto-updates)</td></tr>
+        <tr><td>MultiBuy Qty</td><td>Minimum quantity required to trigger the special (e.g. <code>2</code> for "buy 2 get deal")</td><td>Yes</td></tr>
+        <tr><td>Special Price</td><td>Special price as a dollar amount (e.g. <code>12.99</code>) or percentage off (e.g. <code>15%</code>)</td><td>Yes</td></tr>
+        <tr><td>Get Lowest Free</td><td>Y if the lowest-priced item in a multi-buy is given free</td><td>No</td></tr>
+        <tr><td>New</td><td>Y if this is a new item not in the current specials database</td><td>No (auto)</td></tr>
+        <tr><td>Changed</td><td>Y if this item exists but values have changed</td><td>No (auto)</td></tr>
+        <tr><td>Invalid</td><td>Y if the row has a problem (e.g. no barcode). Invalid rows are skipped on save.</td><td>No (auto)</td></tr>
+        <tr><td>POS Note</td><td>Optional message shown at the point of sale</td><td>Yes</td></tr>
+        <tr><td>Multi Retail</td><td>Combined retail price for multi-buy deals (e.g. <code>2 for $5.00</code>)</td><td>Yes</td></tr>
+        <tr><td>Group ID</td><td>Links related products in a "buy any from this group" deal</td><td>No</td></tr>
+        <tr><td>Combo</td><td>Y if this is a combo purchase deal (buy both products together)</td><td>No</td></tr>
+        <tr><td>Deal Name</td><td>Internal name for the deal (used for grouping on the POS)</td><td>No</td></tr>
+        <tr><td>Gift Barcode / Gift Pharmacode</td><td>Barcode or pharmacode of a free gift product included with purchase</td><td>No</td></tr>
+      </table>
+    </section>
+
+    <!-- ═══════════════════════════════ TIPS ═══════════════════════════════ -->
+    <section id="tips">
+      <h2>Common Questions</h2>
+
+      <h3>The file loaded but all the data is in one column</h3>
+      <p>The file is likely a CSV that uses a different delimiter (such as a semicolon or tab). In the <strong>File Format</strong> panel, change the <em>Field delimiter</em> to match the file, then re-import.</p>
+
+      <h3>All descriptions are too long</h3>
+      <p>Click <strong>Bulk Truncate</strong> to cut everything to 40 characters, then manually correct any that no longer read clearly. Consider setting up Shortening Rules for that supplier so common long words are automatically abbreviated in future.</p>
+
+      <h3>The barcode lookup can't find a product</h3>
+      <p>Try searching by a shorter part of the product name, or check the spelling. If the product genuinely does not exist in the stock database, you will need to create it there first before it can be added to a special.</p>
+
+      <h3>A row is showing as Invalid</h3>
+      <p>An Invalid row in the Specials grid usually means the barcode could not be matched to a product in the database. Use the Stockcard lookup to find the correct barcode, or delete the row if the product should not be included.</p>
+
+      <h3>I saved the wrong data — can I undo?</h3>
+      <p>There is no undo button. If you wrote incorrect data, you will need to re-import the correct file and run Execute Upsert (or Replace All) again to overwrite it. For the Specials module, saving always replaces the existing items for that named special, so re-importing with the correct file will fix it.</p>
+
+      <h3>The app is slow to respond after selecting a supplier</h3>
+      <p>The app fetches the supplier's records from the database in the background. If the database is on a network drive and the network is slow, this may take a few moments. Wait for the status bar to show that the prefetch is complete before clicking Preview Changes.</p>
+    </section>
+
+    <p style="margin-top: 60px; font-size: 12px; color: #9ca3af; border-top: 1px solid #e2e8f0; padding-top: 20px;">
+      Price File App — User Guide &bull; RxOne &bull; Generated March 2026
+    </p>
+
+  </main>
+</div>
+
+<!-- Simple scroll-spy for sidebar -->
+<script>
+  const links = document.querySelectorAll('nav a');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const active = document.querySelector(`nav a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  document.querySelectorAll('section[id], div[id]').forEach(s => observer.observe(s));
+</script>
+
+</body>
+</html>

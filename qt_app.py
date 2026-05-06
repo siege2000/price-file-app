@@ -1183,9 +1183,9 @@ class PriceFileWidget(QWidget):
             outer_key = col("outer")
             if outer_key != "(None)":
                 outer_vals = pd.to_numeric(df[outer_key], errors="coerce").fillna(0).round().astype(int)
-                out["Outer"] = outer_vals.where(outer_vals > 0, 1)
+                out["Outers"] = outer_vals.where(outer_vals > 0, 1)
             else:
-                out["Outer"] = 1
+                out["Outers"] = 1
 
             out = out.dropna(how="all")
 

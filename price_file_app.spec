@@ -7,7 +7,7 @@
 #
 # Version format: YYYY.MM.N  (year, month, release number for that month)
 
-APP_VERSION = '2026.04.03'
+APP_VERSION = '2026.05.01'
 
 block_cipher = None
 
@@ -29,6 +29,7 @@ a = Analysis(
         'pandas._libs.tslibs.np_datetime',
         'pandas._libs.tslibs.nattype',
         'pandas._libs.tslibs.timedeltas',
+        'xlrd',
     ],
     hookspath=[],
     hooksconfig={},

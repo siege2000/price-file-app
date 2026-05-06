@@ -10,6 +10,16 @@ import config
 MAX_DESC_LEN = 40
 
 
+def _first_barcode(series: "pd.Series") -> "pd.Series":
+    """Return only the first barcode from a potentially comma-separated value.
+
+    The Access Details table stores a single barcode per row (matching legacy
+    VB6 behaviour).  Incoming price files sometimes carry multiple barcodes as
+    a comma-separated string; we keep only the first to stay compatible.
+    """
+    return series.str.split(",").str[0].str.strip()
+
+
 def _access_conn(mdb_path: str) -> "pyodbc.Connection":
     if not os.path.isabs(mdb_path):
         mdb_path = os.path.join(os.getcwd(), mdb_path)
@@ -70,7 +80,7 @@ def save_to_details(export_df: pd.DataFrame, supplier_id: int, mark_updated: boo
     df["Pharmacode"] = df.get("Pharmacode", "").fillna("").astype(str)
     df["Cost"] = (pd.to_numeric(df.get("Cost", 0), errors="coerce").fillna(0.0) * 100).round().astype(int)
     df["Retail"] = (pd.to_numeric(df.get("Retail", 0), errors="coerce").fillna(0.0) * 100).round().astype(int)
-    df["Barcode"] = df.get("Barcode", "").fillna("").astype(str)
+    df["Barcode"] = _first_barcode(df.get("Barcode", "").fillna("").astype(str))
     if "Outers" in df.columns:
         df["Outers"] = pd.to_numeric(df["Outers"], errors="coerce").fillna(0).round().astype(int)
         df["Outers"] = df["Outers"].where(df["Outers"] > 0, 1)
@@ -153,10 +163,28 @@ def build_upsert_preview(
         .drop_duplicates("_ecode", keep="last")
         .set_index("_ecode")[ex_cols]
     )
+    # Explode any comma-separated barcodes stored in Access so either individual
+    # barcode can be found in the index.
+    _ex_bc = existing[existing["_ebarcode"] != ""].copy()
+    _ex_bc = _ex_bc.assign(
+        _ebarcode=_ex_bc["_ebarcode"].str.split(r"\s*,\s*")
+    ).explode("_ebarcode")
+    _ex_bc["_ebarcode"] = _ex_bc["_ebarcode"].str.strip()
     ex_by_barcode = (
-        existing[existing["_ebarcode"] != ""]
+        _ex_bc[_ex_bc["_ebarcode"] != ""]
         .drop_duplicates("_ebarcode", keep="last")
         .set_index("_ebarcode")[ex_cols]
+    )
+    # Pharmacode fallback — only index pharmacodes that are unique for this supplier.
+    # _epharm is the index so it must be excluded from the column list; it is
+    # restored as _epharm = _pharm after the merge (they are equal by definition).
+    _ex_ph = existing[existing["_epharm"] != ""].copy()
+    _ph_counts = _ex_ph["_epharm"].value_counts()
+    _ex_pharm_cols = ["_edesc", "_ecost", "_eretail"]  # _epharm is the index, not a column
+    ex_by_pharm = (
+        _ex_ph[_ex_ph["_epharm"].isin(_ph_counts[_ph_counts == 1].index)]
+        .drop_duplicates("_epharm", keep="last")
+        .set_index("_epharm")[_ex_pharm_cols]
     )
 
     # Normalise export columns
@@ -189,17 +217,45 @@ def build_upsert_preview(
     df_remaining = df[no_code_match_mask].copy()
 
     # --- Step 2: match remaining by barcode ---
+    # Barcodes may be comma-separated in the price file; try each candidate.
     has_barcode = df_remaining["_barcode"] != ""
-    matched_barcode = df_remaining[has_barcode].merge(
-        ex_by_barcode, left_on="_barcode", right_index=True, how="left"
+    barcode_candidates = df_remaining[has_barcode].copy().reset_index(drop=True)
+    barcode_candidates["_orig_idx"] = barcode_candidates.index
+
+    exploded = barcode_candidates.assign(
+        _barcode_try=barcode_candidates["_barcode"].str.split(r"\s*,\s*")
+    ).explode("_barcode_try")
+    exploded["_barcode_try"] = exploded["_barcode_try"].str.strip()
+
+    merged = exploded.merge(
+        ex_by_barcode, left_on="_barcode_try", right_index=True, how="left"
     )
-    unmatched = df_remaining[~has_barcode].copy()
-    # Also unmatched barcodes
-    unmatched = pd.concat([
-        unmatched,
-        matched_barcode[matched_barcode["_edesc"].isna()],
+    first_hits = (
+        merged[merged["_edesc"].notna()]
+        .drop_duplicates(subset="_orig_idx", keep="first")
+    )
+    matched_idxs = set(first_hits["_orig_idx"])
+    unmatched_barcode = barcode_candidates[~barcode_candidates["_orig_idx"].isin(matched_idxs)]
+
+    matched_barcode = first_hits.drop(columns=["_barcode_try", "_orig_idx"])
+    after_barcode = pd.concat([
+        df_remaining[~has_barcode],
+        unmatched_barcode.drop(columns=["_orig_idx"]),
     ], ignore_index=True)
-    matched_barcode = matched_barcode[matched_barcode["_edesc"].notna()]
+
+    # --- Step 3: match remaining by pharmacode ---
+    # Fallback when barcodes are absent or truncated in Access.
+    has_pharm = after_barcode["_pharm"] != ""
+    matched_pharm = after_barcode[has_pharm].merge(
+        ex_by_pharm, left_on="_pharm", right_index=True, how="left"
+    )
+    unmatched = pd.concat([
+        after_barcode[~has_pharm],
+        matched_pharm[matched_pharm["_edesc"].isna()],
+    ], ignore_index=True)
+    matched_pharm = matched_pharm[matched_pharm["_edesc"].notna()].copy()
+    # Restore _epharm — since we matched on pharmacode it equals _pharm
+    matched_pharm["_epharm"] = matched_pharm["_pharm"]
 
     # --- Build preview rows ---
     def _make_rows(matched: pd.DataFrame, match_type: str) -> pd.DataFrame:
@@ -226,13 +282,14 @@ def build_upsert_preview(
     code_new["Old_Retail"] = None
 
     barcode_rows = _make_rows(matched_barcode, "barcode")
+    pharm_rows = _make_rows(matched_pharm, "pharm")
 
     unmatched["Status"] = "NEW"
     unmatched["Old_Description"] = ""
     unmatched["Old_Cost"] = None
     unmatched["Old_Retail"] = None
 
-    all_rows = pd.concat([code_rows, code_new, barcode_rows, unmatched], ignore_index=True)
+    all_rows = pd.concat([code_rows, code_new, barcode_rows, pharm_rows, unmatched], ignore_index=True)
 
     preview = pd.DataFrame({
         "Status": all_rows["Status"],
@@ -323,7 +380,7 @@ def upsert_details(
     df["Pharmacode"] = df.get("Pharmacode", "").fillna("").astype(str)
     df["Cost"] = (pd.to_numeric(df.get("Cost", 0), errors="coerce").fillna(0.0) * 100).round().astype(int)
     df["Retail"] = (pd.to_numeric(df.get("Retail", 0), errors="coerce").fillna(0.0) * 100).round().astype(int)
-    df["Barcode"] = df.get("Barcode", "").fillna("").astype(str)
+    df["Barcode"] = _first_barcode(df.get("Barcode", "").fillna("").astype(str))
     if "Outers" in df.columns:
         df["Outers"] = pd.to_numeric(df["Outers"], errors="coerce").fillna(0).round().astype(int)
         df["Outers"] = df["Outers"].where(df["Outers"] > 0, 1)
@@ -336,13 +393,21 @@ def upsert_details(
     existing = existing_df if existing_df is not None else load_supplier_details(supplier_id)
     by_code: dict[str, pd.Series] = {}
     by_barcode: dict[str, pd.Series] = {}
+    by_pharm: dict[str, pd.Series] = {}
+    pharm_counts: dict[str, int] = {}
     for _, row in existing.iterrows():
         code = str(row["Code"] or "").strip()
         barcode = str(row["Barcode"] or "").strip()
+        pharm = str(row["Pharmacode"] or "").strip()
         if code:
             by_code[code] = row
         if barcode:
             by_barcode[barcode] = row
+        if pharm:
+            pharm_counts[pharm] = pharm_counts.get(pharm, 0) + 1
+            by_pharm[pharm] = row
+    # Only use pharmacode as a fallback when it is unique for this supplier
+    by_pharm = {k: v for k, v in by_pharm.items() if pharm_counts[k] == 1}
 
     # Classify each export row — skip rows where nothing has changed
     update_code_rows: list[tuple] = []
@@ -351,9 +416,10 @@ def upsert_details(
 
     for r in df.itertuples(index=False):
         sup_code = (r.Code or "").strip()
+        # r.Barcode is already the first barcode only (stripped by _first_barcode above)
         barcode = (r.Barcode or "").strip()
         desc = r.Description
-        pharmacode = r.Pharmacode
+        pharmacode = str(r.Pharmacode or "").strip()
         cost = float(r.Cost)
         retail = float(r.Retail)
         outers = int(r.Outers)
@@ -367,6 +433,12 @@ def upsert_details(
             ex = by_barcode[barcode]
             if _row_changed(ex, desc, cost, retail, pharmacode):
                 update_barcode_rows.append(upd_params + (int(supplier_id), barcode))
+        elif pharmacode and pharmacode in by_pharm:
+            ex = by_pharm[pharmacode]
+            # Update using the barcode stored in Access (the reliable single value)
+            existing_barcode = str(ex["Barcode"] or "").strip()
+            if _row_changed(ex, desc, cost, retail, pharmacode):
+                update_barcode_rows.append(upd_params + (int(supplier_id), existing_barcode))
         else:
             insert_rows.append((
                 new_guid(), int(supplier_id), sup_code, desc, pharmacode,
@@ -439,7 +511,7 @@ def replace_all_details(
     df["Pharmacode"] = df.get("Pharmacode", "").fillna("").astype(str)
     df["Cost"] = (pd.to_numeric(df.get("Cost", 0), errors="coerce").fillna(0.0) * 100).round().astype(int)
     df["Retail"] = (pd.to_numeric(df.get("Retail", 0), errors="coerce").fillna(0.0) * 100).round().astype(int)
-    df["Barcode"] = df.get("Barcode", "").fillna("").astype(str)
+    df["Barcode"] = _first_barcode(df.get("Barcode", "").fillna("").astype(str))
     if "Outers" in df.columns:
         df["Outers"] = pd.to_numeric(df["Outers"], errors="coerce").fillna(0).round().astype(int)
         df["Outers"] = df["Outers"].where(df["Outers"] > 0, 1)
@@ -466,9 +538,19 @@ def replace_all_details(
     ]
 
     total = len(rows)
+    sid = int(supplier_id)
     with get_access_conn() as conn:
         cur = conn.cursor()
-        cur.execute("DELETE FROM Details WHERE SupplierID = ?", (int(supplier_id),))
+        # Delete in batches to stay under Access MaxLocksPerFile (~9500 default)
+        while True:
+            cur.execute(
+                "DELETE FROM Details WHERE SupplierID = ? AND PartCodeGuid IN "
+                "(SELECT TOP 1000 PartCodeGuid FROM Details WHERE SupplierID = ?)",
+                (sid, sid),
+            )
+            conn.commit()
+            if cur.rowcount == 0:
+                break
         cur.fast_executemany = False
         for start in range(0, total, chunk_size):
             chunk = rows[start:start + chunk_size]

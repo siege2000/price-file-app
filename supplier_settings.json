@@ -1,0 +1,32 @@
+{
+  "128": {
+    "sheets": {
+      "Toniq Product Spreadsheet": {
+        "template": "Toniq",
+        "skip_rows": 0,
+        "columns": {
+          "plu": "Pharmacode",
+          "pharmacode": "Pharmacode",
+          "retail": "RRP (incl GST)",
+          "cost": "Cost Price (List cost or Wholesale cost) excl GST",
+          "barcode": "Barcode",
+          "sc": "Supplier Code (Product Code)",
+          "outer": "(None)"
+        },
+        "description": {
+          "columns": [
+            "Brand",
+            "Product Name",
+            "Colour/ Shade",
+            "Size (Net Content)",
+            "Unit of Measure"
+          ],
+          "prefix": "",
+          "separator": " ",
+          "title_case": true,
+          "normalize_units": true
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "templates": {
+    "Toniq": {
+      "fields": {
+        "plu": { "column": "Pharmacode" },
+        "retail": { "column": "RRP (incl GST)" },
+        "cost": {
+          "column": "Cost Price (List cost or Wholesale cost) excl GST"
+        },
+        "barcode": { "column": "Barcode" },
+        "sc": { "column": "Supplier Code (Product Code)" },
+        "pharmacode":{ "column":"Pharmacode" }
+      },
+      "description": {
+        "columns": [
+          "Brand",
+          "Product Name",
+          "Size (Net Content)",
+          "Unit of Measure",
+          "Colour/ Shade"
+        ],
+        "separator": " ",
+        "title_case": true,
+        "normalize_units": true
+      },
+      "options": {
+        "skip_rows_default": 2,
+        "price_decimals": 2,
+        "csv_delimiter": ",",
+        "allow_blank_plu": true
+      }
+    },
+
+    "RxOne": {
+      "fields": {
+        "plu": { "column": "SAP Code" },
+        "retail": { "column": "Retail" },
+        "cost": { "column": "Cost" },
+        "barcode": { "column": "Barcode" },
+        "sc": { "column": "Supplier Code (Product Code)" },
+         "pharmacode":{"column":"Pharmacode"}
+      },
+      "description": {
+        "columns": ["TradeName", "Strength", "PackSize"],
+        "separator": " ",
+        "title_case": false,
+        "normalize_units": true
+      },
+      "options": {
+        "skip_rows_default": 0,
+        "price_decimals": 2,
+        "csv_delimiter": ",",
+        "allow_blank_plu": true
+      }
+    },
+
+    "General": {
+      "fields": {
+        "plu": { "match_terms": ["plu", "sku", "item", "code", "pharmacode"] },
+        "retail": { "match_terms": ["retail", "rrp", "sell"] },
+        "cost": {
+          "match_terms": ["cost", "ctc", "wholesale", "landed", "buy"]
+        },
+        "barcode": { "match_terms": ["barcode", "ean", "gtin"] },
+        "sc": { "column": "Supplier Code (Product Code)" },
+         "pharmacode":{"column":"Pharmacode"}
+      },
+      "description": {
+        "columns_match_terms": [
+          "description",
+          "product",
+          "name",
+          "tradename",
+          "size"
+        ],
+        "separator": " ",
+        "title_case": false,
+        "normalize_units": true
+      },
+      "options": {
+        "skip_rows_default": 0,
+        "price_decimals": 2,
+        "csv_delimiter": ",",
+        "allow_blank_plu": true
+      }
+    }
+  }
+}
